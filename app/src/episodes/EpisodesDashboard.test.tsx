@@ -98,3 +98,15 @@ it("uses the same chronic-care history across SMS and voice and routes medical q
   expect(host.textContent).toContain("has not been accepted yet");
   expect(host.textContent).toContain("0/2 · 0%");
 });
+it("discards an appointment draft when switching patients", async () => {
+  const appointment = "Synthetic appointment time";
+  const record = "Record scheduled appointment";
+  await click("Confirm demo identity");
+  await input(appointment, "2027-01-12T15:30");
+  expect(button(record).disabled).toBe(false);
+
+  await select("Scenario", "episode-chronic");
+  await click("Confirm demo identity");
+  expect(host.querySelector<HTMLInputElement>('input[type="datetime-local"]')!.value).toBe("");
+  expect(button(record).disabled).toBe(true);
+});
