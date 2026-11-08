@@ -2,16 +2,17 @@ import { useMemo, useState } from "react";
 import {
   ArrowRight, Baby, CheckCircle2, ChevronRight, Phone, PhoneMissed, Search, Sparkles, X,
 } from "lucide-react";
-import { MOMS, DEMO_AS_OF, status, LEVEL_TEXT, type Mom } from "../data/moms";
+import { DEMO_AS_OF, status, LEVEL_TEXT, type Mom } from "../data/moms";
 import { LABEL, RANK, type Level } from "../lib/rules";
 import { BPChart, Card, Pill, Sparkline, levelStyle } from "../ui/parts";
 
-import { cohortMetrics, rate } from "../data/metrics";
+import { continuityMetrics, useCare } from "../data/workflow";
+import { rate } from "../data/metrics";
 
 type Filter = "all" | "act" | "review" | "ok";
 
 export default function NurseDashboard() {
-  const [moms, setMoms] = useState<Mom[]>(MOMS);
+  const { moms, state, handle } = useCare();
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -39,9 +40,9 @@ export default function NurseDashboard() {
 
   const open = moms.find((m) => m.id === openId) ?? null;
   const markHandled = (id: string, note: string) =>
-    setMoms((ms) => ms.map((m) => (m.id === id ? { ...m, handled: true, nurseNote: note } : m)));
+    handle(id, note);
 
-  const metrics = cohortMetrics(moms);
+  const metrics = continuityMetrics(moms, state);
   const today = new Date(DEMO_AS_OF + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   return (
@@ -76,15 +77,15 @@ export default function NurseDashboard() {
           </section>
 
           <Card className="p-5">
-            <h2 className="font-bold text-navy">Cohort performance · fixed synthetic snapshot</h2>
-            <p className="mt-1 text-xs text-body">15 distinct postpartum care scenarios. These are demo operations, not measured clinical outcomes or population rates. Handling an alert does not normalize the clinical reading.</p>
+            <h2 className="font-bold text-navy">Continuity of care · synthetic snapshot</h2>
+            <p className="mt-1 text-xs text-body">Care completion and unresolved workflow gaps. Clinical severity remains separate from workflow acknowledgements.</p>
             <dl className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-              <div><dt>Calls answered today</dt><dd className="text-xl font-bold">{metrics.answered}/{metrics.scheduledToday} · {rate(metrics.answered, metrics.scheduledToday)}</dd></div>
-              <div><dt>BP captured today</dt><dd className="text-xl font-bold">{metrics.bpCaptured}/{metrics.enrolled} · {rate(metrics.bpCaptured, metrics.enrolled)}</dd></div>
-              <div><dt>Care tasks completed among due</dt><dd className="text-xl font-bold">{metrics.tasksCompleted}/{metrics.tasksDue} · {rate(metrics.tasksCompleted, metrics.tasksDue)}</dd></div>
-              <div><dt>Open alert work items</dt><dd className="text-xl font-bold">{metrics.openAlerts}</dd></div>
+              <div><dt>Urgent doctor reviews pending</dt><dd className="text-xl font-bold">{metrics.pendingUrgent}/{metrics.urgent}</dd></div>
+              <div><dt>Due care actions completed</dt><dd className="text-xl font-bold">{metrics.completedDue}/{metrics.due} · {rate(metrics.completedDue, metrics.due)}</dd></div>
+              <div><dt>Overdue care actions</dt><dd className="text-xl font-bold">{metrics.overdue}</dd></div>
+              <div><dt>Restored contact documented</dt><dd className="text-xl font-bold">{metrics.contactRestored}/{metrics.missed}</dd></div>
             </dl>
-            <p className="mt-3 text-xs text-body">History: {metrics.answeredCallDays}/{metrics.callDays} scheduled call-days answered, {metrics.attempts} total dialing attempts. Care tasks are separate from automated calls. {metrics.tasksOverdue} overdue tasks; pending and overdue tasks remain in the due denominator.</p>
+            <p className="mt-3 text-xs text-body">{metrics.reviewed}/{metrics.enrolled} documented doctor reviews. A review does not establish restored contact or recovery. Future tasks are excluded from completion rates.</p>
           </Card>
 
           {/* Toolbar */}
@@ -192,6 +193,8 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
   const [note, setNote] = useState(mom.nurseNote ?? "");
   const t = s.today;
   const summary = buildSummary(mom);
+  const { state, completeTask } = useCare();
+  const doctorReviews = state.reviews.filter(r => r.patientId === mom.id);
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label={`${mom.name} details`}>
@@ -226,6 +229,11 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
             </div>
           )}
 
+          <Card className="p-5"><h3 className="font-bold">Doctor coordination</h3>
+            <a href={`#doctor/${mom.id}`} className="mt-2 inline-block text-sm font-bold text-navy underline">Open doctor review for {mom.name}</a>
+            {doctorReviews.length ? doctorReviews.map((r,i)=><div key={i} className="mt-3 rounded-lg bg-ground p-3 text-sm"><b>{r.disposition}</b><p className="whitespace-pre-wrap">{r.note}</p></div>) : <p className="mt-2 text-sm text-body">Awaiting doctor assessment.</p>}
+            <ul className="mt-3 space-y-2">{state.tasks.filter(t=>t.patientId===mom.id).map(t=><li key={t.id} className="rounded-lg border border-line p-3 text-sm">{t.title}<p className="text-xs text-body">{t.owner} · due day {t.dueDay} · {t.completed ? "Completed" : "Pending"}</p>{!t.completed&&<button className="mt-2 text-sm font-bold text-navy underline" onClick={()=>completeTask(t.id)}>Record action completed</button>}</li>)}</ul>
+          </Card>
           {/* AI summary */}
           <Card className="p-5">
             <div className="flex items-center gap-2 text-sm font-bold text-navy"><Sparkles size={16} className="text-gold-dark" /> What to look at</div>
@@ -241,7 +249,7 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
             <ul className="mt-2 list-disc pl-5 text-sm">{mom.history.prenatal.map(e => <li key={e.gestationalWeek}>Week {e.gestationalWeek}: {e.bp.join("/")} mmHg · {e.note}</li>)}</ul>
             <p className="mt-2 text-sm">Access barriers: {mom.history.barriers.join("; ") || "None recorded in this synthetic scenario"}.</p>
             <p className="mt-2 text-sm">Care pathway: {mom.useCase}.</p>
-            <ul className="mt-2 list-disc pl-5 text-sm">{mom.careTasks?.map(t => <li key={t.kind}>{t.kind.split("_").join(" ")}: due postpartum day {t.dueDay} · {t.completedDay !== undefined ? `completed day ${t.completedDay}` : t.dueDay < mom.dayToday ? "overdue" : "pending"}. {t.note}</li>)}</ul>
+            <ul className="mt-2 list-disc pl-5 text-sm">{state.tasks.filter(t => t.patientId === mom.id).map(t => <li key={t.id}>{t.title}: due postpartum day {t.dueDay} · {t.completed ? "completed" : t.dueDay < mom.dayToday ? "overdue" : "pending"}.</li>)}</ul>
           </Card>}
 
           {/* Chart */}
