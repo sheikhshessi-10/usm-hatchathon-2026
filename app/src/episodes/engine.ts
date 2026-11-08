@@ -738,6 +738,7 @@ export function episodeMetrics(state: State) {
       (e) => e.state === "verified_closed" && e.evidenceId && e.verifiedAt,
     );
   const elapsed = closed
+    .filter((e) => e.interactions.length > 0)
     .map(
       (e) =>
         (Date.parse(e.verifiedAt!) -
