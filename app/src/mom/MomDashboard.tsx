@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Baby, CalendarDays, Droplets, HeartPulse, Home, LifeBuoy, Phone, PhoneCall, Siren, Thermometer, Utensils } from "lucide-react";
+import { AlertTriangle, Baby, CalendarDays, Droplets, HeartPulse, LifeBuoy, PhoneCall, Siren, Thermometer, Utensils } from "lucide-react";
 import { MOMS, status, type Mom } from "../data/moms";
 import type { Level } from "../lib/rules";
 import { BPChart, Card } from "../ui/parts";
@@ -22,7 +22,7 @@ export default function MomDashboard() {
 
   return (
     <div className="min-h-screen bg-ground text-ink">
-      <div className="mx-auto flex max-w-[440px] flex-col gap-4 px-4 pb-28 pt-16">
+      <div className="mx-auto flex max-w-[440px] flex-col gap-4 px-4 pb-12 pt-16">
         <label className="flex items-center justify-between gap-2 text-xs text-body">
           <span>Demo: viewing as</span>
           <select id="mom-pick" value={momId} onChange={(e) => setMomId(e.target.value)} className="rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-navy">
@@ -110,11 +110,6 @@ export default function MomDashboard() {
         </Card>
       </div>
 
-      <nav className="fixed bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full border border-white/60 bg-white/75 p-1.5 shadow-[0_8px_28px_rgba(10,42,77,0.14)] backdrop-blur-xl">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"><Home size={15} /> Today</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-navy"><Baby size={15} /> Baby</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold text-navy"><Phone size={15} /> Help</span>
-      </nav>
     </div>
   );
 }

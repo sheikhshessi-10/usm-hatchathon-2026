@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import {
-  ArrowRight, Baby, Bell, CheckCircle2, ChevronRight, ClipboardList, Home, Map, Phone, PhoneMissed, Search,
-  Settings, Sparkles, Users, X,
+  ArrowRight, Baby, CheckCircle2, ChevronRight, Phone, PhoneMissed, Search, Sparkles, X,
 } from "lucide-react";
 import { MOMS, status, LEVEL_TEXT, type Mom } from "../data/moms";
 import { LABEL, RANK, type Level } from "../lib/rules";
@@ -45,7 +44,7 @@ export default function NurseDashboard() {
   return (
     <div className="flex min-h-screen bg-ground text-ink">
       <Rail />
-      <main className="flex-1 min-w-0 px-4 sm:px-8 pt-16 pb-28">
+      <main className="flex-1 min-w-0 px-4 sm:px-8 pt-16 pb-12">
         <div className="mx-auto max-w-6xl flex flex-col gap-6">
           {/* Hero, LGS style navy band */}
           <section className="relative overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-navy via-navy to-navy-900 px-7 py-8 sm:px-10 text-white">
@@ -147,12 +146,6 @@ export default function NurseDashboard() {
         </div>
       </main>
 
-      {/* Floating pill bar, as in LGS */}
-      <nav className="fixed bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full border border-white/60 bg-white/75 p-1.5 shadow-[0_8px_28px_rgba(10,42,77,0.14)] backdrop-blur-xl">
-        <span className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"><Bell size={15} /> Queue</span>
-        <span className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-navy"><Users size={15} /> All moms</span>
-        <span className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-navy"><Map size={15} /> Map</span>
-      </nav>
 
       {open && <Drawer mom={open} onClose={() => setOpenId(null)} onHandled={markHandled} />}
     </div>
@@ -170,15 +163,9 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: "red
 }
 
 function Rail() {
-  const items = [Home, Users, Map, Phone, ClipboardList, Settings];
   return (
     <aside className="sticky top-0 hidden h-screen w-14 shrink-0 flex-col items-center gap-2 border-r border-line bg-white py-4 sm:flex">
       <div className="mb-4 grid h-9 w-9 place-items-center rounded-lg bg-navy text-[13px] font-extrabold text-gold">CB</div>
-      {items.map((I, i) => (
-        <span key={i} className={`grid h-10 w-10 place-items-center rounded-[10px] ${i === 0 ? "bg-navy text-white" : "text-navy/70 hover:bg-hover"}`}>
-          <I size={18} />
-        </span>
-      ))}
       <span className="mt-auto grid h-8 w-8 place-items-center rounded-full bg-navy text-xs font-bold text-white">T</span>
     </aside>
   );
