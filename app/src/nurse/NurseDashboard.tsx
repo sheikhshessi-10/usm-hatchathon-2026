@@ -2,9 +2,11 @@ import { useMemo, useState } from "react";
 import {
   ArrowRight, Baby, CheckCircle2, ChevronRight, Phone, PhoneMissed, Search, Sparkles, X,
 } from "lucide-react";
-import { MOMS, status, LEVEL_TEXT, type Mom } from "../data/moms";
+import { MOMS, DEMO_AS_OF, status, LEVEL_TEXT, type Mom } from "../data/moms";
 import { LABEL, RANK, type Level } from "../lib/rules";
 import { BPChart, Card, Pill, Sparkline, levelStyle } from "../ui/parts";
+
+import { cohortMetrics, rate } from "../data/metrics";
 
 type Filter = "all" | "act" | "review" | "ok";
 
@@ -16,7 +18,7 @@ export default function NurseDashboard() {
 
   const rows = useMemo(() => {
     return moms
-      .map((m) => ({ m, s: status(m), lvl: (m.handled ? "green" : status(m).level) as Level }))
+      .map((m) => ({ m, s: status(m), lvl: status(m).level }))
       .sort((a, b) => RANK[b.lvl] - RANK[a.lvl] || a.m.name.localeCompare(b.m.name));
   }, [moms]);
 
@@ -39,7 +41,8 @@ export default function NurseDashboard() {
   const markHandled = (id: string, note: string) =>
     setMoms((ms) => ms.map((m) => (m.id === id ? { ...m, handled: true, nurseNote: note } : m)));
 
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const metrics = cohortMetrics(moms);
+  const today = new Date(DEMO_AS_OF + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
   return (
     <div className="flex min-h-screen bg-ground text-ink">
@@ -51,7 +54,7 @@ export default function NurseDashboard() {
             <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/5 blur-2xl" />
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="flex flex-col gap-3">
-                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/60">{today} · Forrest General Women's Services</span>
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/60">{today} · Synthetic demonstration cohort</span>
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Good afternoon, Nurse Taylor</h1>
                 <p className="text-white/80 text-[17px]">
                   <b className="text-white">{counts.act} {counts.act === 1 ? "mom needs" : "moms need"} you now.</b> {rows.length} moms in their first 10 days at home.
@@ -71,6 +74,18 @@ export default function NurseDashboard() {
               </div>
             </div>
           </section>
+
+          <Card className="p-5">
+            <h2 className="font-bold text-navy">Cohort performance · fixed synthetic snapshot</h2>
+            <p className="mt-1 text-xs text-body">15 distinct postpartum care scenarios. These are demo operations, not measured clinical outcomes or population rates. Handling an alert does not normalize the clinical reading.</p>
+            <dl className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div><dt>Calls answered today</dt><dd className="text-xl font-bold">{metrics.answered}/{metrics.scheduledToday} · {rate(metrics.answered, metrics.scheduledToday)}</dd></div>
+              <div><dt>BP captured today</dt><dd className="text-xl font-bold">{metrics.bpCaptured}/{metrics.enrolled} · {rate(metrics.bpCaptured, metrics.enrolled)}</dd></div>
+              <div><dt>Care tasks completed among due</dt><dd className="text-xl font-bold">{metrics.tasksCompleted}/{metrics.tasksDue} · {rate(metrics.tasksCompleted, metrics.tasksDue)}</dd></div>
+              <div><dt>Open alert work items</dt><dd className="text-xl font-bold">{metrics.openAlerts}</dd></div>
+            </dl>
+            <p className="mt-3 text-xs text-body">History: {metrics.answeredCallDays}/{metrics.callDays} scheduled call-days answered, {metrics.attempts} total dialing attempts. Care tasks are separate from automated calls. {metrics.tasksOverdue} overdue tasks; pending and overdue tasks remain in the due denominator.</p>
+          </Card>
 
           {/* Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
@@ -115,7 +130,7 @@ export default function NurseDashboard() {
                     <span className="font-bold truncate">{m.name}</span>
                     {m.handled && <CheckCircle2 size={15} className="text-green shrink-0" />}
                   </div>
-                  <div className="text-[13px] text-body">Day {m.dayToday} of 10 · {m.county} County · {m.phoneType}</div>
+                  <div className="text-[13px] text-body">Day {m.dayToday} · {m.useCase} · {m.county} County</div>
                 </div>
                 <div className="col-start-2 md:col-auto">
                   {s.today?.answered ? (
@@ -173,7 +188,7 @@ function Rail() {
 
 function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; onHandled: (id: string, note: string) => void }) {
   const s = status(mom);
-  const lvl: Level = mom.handled ? "green" : s.level;
+  const lvl: Level = s.level;
   const [note, setNote] = useState(mom.nurseNote ?? "");
   const t = s.today;
   const summary = buildSummary(mom);
@@ -201,7 +216,7 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
                 <span className={`text-[11px] font-bold uppercase tracking-wider ${levelStyle[lvl].text}`}>Today, {t?.time}</span>
                 {s.findings.map((f, i) => <p key={i} className="text-[17px] font-bold">{f.who === "baby" ? "Baby: " : ""}{f.reason}</p>)}
                 <p className="text-sm text-body mt-1">
-                  {lvl === "yellow" ? "Mom was told her nurse will check in today." : "Mom was told: go to the ER or call your doctor now. This alert stays open until you mark it handled."}
+                  {lvl === "yellow" ? "Synthetic workflow: nurse review is pending." : "Urgent concern in a synthetic scenario. No real notification or emergency referral has been sent."}
                 </p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -217,8 +232,17 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
             <ul className="mt-3 flex list-disc flex-col gap-1.5 pl-5 text-[15px]">
               {summary.map((x, i) => <li key={i}>{x}</li>)}
             </ul>
-            <p className="mt-3 text-xs text-body">Written by AI from the calls and her discharge papers. The nurse and doctor decide.</p>
+            <p className="mt-3 text-xs text-body">Template summary from synthetic check-ins; no AI model or real discharge record is connected.</p>
           </Card>
+
+          {mom.history && <Card className="p-5">
+            <h3 className="font-bold">Synthetic pregnancy and care history</h3>
+            <p className="mt-2 text-sm">Delivery {mom.history.deliveryDate} at {mom.history.gestationalWeeks} weeks · discharged postpartum day {mom.history.dischargeDay}.</p>
+            <ul className="mt-2 list-disc pl-5 text-sm">{mom.history.prenatal.map(e => <li key={e.gestationalWeek}>Week {e.gestationalWeek}: {e.bp.join("/")} mmHg · {e.note}</li>)}</ul>
+            <p className="mt-2 text-sm">Access barriers: {mom.history.barriers.join("; ") || "None recorded in this synthetic scenario"}.</p>
+            <p className="mt-2 text-sm">Care pathway: {mom.useCase}.</p>
+            <ul className="mt-2 list-disc pl-5 text-sm">{mom.careTasks?.map(t => <li key={t.kind}>{t.kind.split("_").join(" ")}: due postpartum day {t.dueDay} · {t.completedDay !== undefined ? `completed day ${t.completedDay}` : t.dueDay < mom.dayToday ? "overdue" : "pending"}. {t.note}</li>)}</ul>
+          </Card>}
 
           {/* Chart */}
           <Card className="p-5">
@@ -261,7 +285,7 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
             <dl className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <div><dt className="text-body text-xs">Medicines</dt><dd className="font-semibold">{mom.meds.length ? mom.meds.join(", ") : "None"}</dd></div>
               <div><dt className="text-body text-xs">Next visit</dt><dd className="font-semibold">{mom.visit}</dd></div>
-              <div><dt className="text-body text-xs">Danger numbers</dt><dd className="font-semibold">Urgent at 160/110 · Review at 150/100 · 140/90 + symptoms</dd></div>
+              <div><dt className="text-body text-xs">Danger numbers</dt><dd className="font-semibold">Demo BP rules: urgent at systolic ≥160 OR diastolic ≥110; review ≥150 OR ≥100; symptoms assessed separately</dd></div>
               <div><dt className="text-body text-xs">Calls</dt><dd className="font-semibold">Daily, 9 AM, days 2 to 10 · {mom.phoneType}</dd></div>
               <div><dt className="text-body text-xs">Baby</dt><dd className="font-semibold">{mom.baby.name} · {mom.baby.feeding}</dd></div>
               <div><dt className="text-body text-xs">Rules from</dt><dd className="font-semibold">SMFM · AIM · POST-BIRTH · AAP</dd></div>
@@ -270,7 +294,7 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
 
           {/* Handle */}
           <Card className="p-5">
-            <label htmlFor="note" className="font-bold">Nurse note</label>
+            <label htmlFor="note" className="font-bold">Demo nurse note</label>
             <textarea
               id="note" value={note} onChange={(e) => setNote(e.target.value)} rows={3}
               placeholder="What you did, e.g. spoke with mom, sent to ER, OB increased nifedipine."
@@ -302,9 +326,10 @@ function buildSummary(m: Mom): string[] {
   }
   const sx = [...new Set(m.calls.flatMap((c) => c.symptoms))];
   if (sx.length) out.push(`Symptoms reported: ${sx.map((x) => LABEL[x]).join(", ")}.`);
-  out.push(m.meds.length ? `On ${m.meds.join(", ")}. Check she is taking it, and whether the dose needs review.` : "Not on blood pressure medicine.");
+  out.push(m.meds.length ? `On ${m.meds.join(", ")}. Reconcile with the documented care plan.` : "No ongoing medicines listed in this synthetic record.");
   const missed = m.calls.filter((c) => !c.answered).length;
   if (missed) out.push(`Missed ${missed} call${missed > 1 ? "s" : ""}. Confirm phone number and best time.`);
   if (m.visit.includes("not booked") || m.visit.includes("missed")) out.push(`Follow-up visit: ${m.visit}. Help her book it.`);
   return out;
 }
+
