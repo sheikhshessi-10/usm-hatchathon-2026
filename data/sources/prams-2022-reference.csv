@@ -1,0 +1,4 @@
+indicator,year,sheet,row,population,unweightedDenominator,unweightedNumerator,weightedPercent,lower95,upper95
+Self-reported postpartum depressive symptoms,2022,sheet5,74,Sites aggregated*,30706,4269,12.7,12.1,13.3
+Had maternal postpartum checkup,2022,sheet6,109,Sites aggregated*,30844,27633,90.6,90.1,91.1
+No insurance postpartum,2022,sheet12,74,Sites aggregated*,30274,1854,5.7,5.3,6.1
