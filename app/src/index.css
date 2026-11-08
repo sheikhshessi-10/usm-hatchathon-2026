@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-html { font-family: "Archivo", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+html { font-family: system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 body { @apply bg-ground text-ink; }
 ::selection { background: #f5d90a; color: #0a2a4d; }
 :focus-visible { outline: 2px solid #8a7500; outline-offset: 2px; }
