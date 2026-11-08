@@ -6,8 +6,8 @@ import type { Level } from "../lib/rules";
 import { BPChart, Card } from "../ui/parts";
 
 const MOM_TEXT: Record<Level, { title: string; body: string }> = {
-  red911: { title: "Call 911 now", body: "What you told us today can be an emergency. Call 911 and say: \"I gave birth on November 3.\"" },
-  red: { title: "Go to the ER or call your doctor now", body: "A reported concern needs urgent clinical assessment. This demo does not notify a nurse or place a call." },
+  red911: { title: "Urgent scenario concern", body: "This synthetic scenario requires an urgent human review pathway. No emergency response has been dispatched by this demo." },
+  red: { title: "Urgent clinician review needed", body: "A reported concern needs urgent clinical assessment. This demo does not notify a nurse or place a call." },
   yellow: { title: "Your care plan needs review", body: "A reported concern or care gap needs review. In this demo, no nurse notification is sent." },
   green: { title: "You're on track today", body: "No flagged concern is recorded in this demo today. Follow the individual care plan; this is not a medical clearance." },
 };
