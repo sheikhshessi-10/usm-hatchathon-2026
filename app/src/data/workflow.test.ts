@@ -2,6 +2,20 @@ import { describe, expect, it } from "vitest";
 import { MOMS, status } from "./moms";
 import { continuityMetrics, initialWorkflow, readWorkflow } from "./workflow";
 describe("continuity measures",()=>{
+  it("counts handoff acceptance and closure separately from review dispositions",()=>{
+    const state=initialWorkflow();
+    state.reviews.push({patientId:"m1", disposition:"follow-up", note:"Needs follow-up",contactOutcome:"not-recorded",at:"2026-11-08T12:00:00Z"});
+    expect(continuityMetrics(MOMS,state).handoffRequests).toBe(0);
+    const task = {id:"handoff-test",patientId:"m1",title:"Transport coordination",owner:"Nurse" as const,dueDay:5,completed:false,source:"doctor" as const};
+    state.tasks.push(task);
+    expect(continuityMetrics(MOMS,state).handoffsPending).toBe(1);
+    state.tasks[state.tasks.length-1]={...task,acceptedAt:"2026-11-08T12:05:00Z",acceptedBy:"Nurse"};
+    expect(continuityMetrics(MOMS,state).handoffsAccepted).toBe(1);
+    expect(continuityMetrics(MOMS,state).handoffsClosed).toBe(0);
+    state.tasks[state.tasks.length-1].completed=true;
+    expect(continuityMetrics(MOMS,state).handoffsClosed).toBe(1);
+    expect(status(MOMS[0]).level).toBe("red");
+  });
   it("uses due actions, not calls, as the completion denominator",()=>{
     const state=initialWorkflow(), k=continuityMetrics(MOMS,state);
     expect(k.due).toBe(8); expect(k.completedDue).toBe(1); expect(k.urgent).toBe(4);
