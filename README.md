@@ -14,6 +14,10 @@ Open `index.html` in a browser. No build or installation needed. For local devel
 - Clinician review queue for reported concerns
 - New patient enrollment and configurable check-in cadence
 - Browser-local demo state via localStorage
+- Care plan creation and status management
+- Follow-up task assignment, due dates, priority, and completion
+- Scheduled outreach queue with simulated completion
+- Operational analytics across fictional patients and workflow records
 
 ## Safety and limitations
 
