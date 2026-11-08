@@ -12,7 +12,7 @@ npm install
 npm run dev
 ```
 
-Open the address it prints. Use the switch at the top right for **Nurse view**, **Doctor view**, and **Mom view**. All patients are made up.
+Open the address it prints. Use the switch at the top right for **Nurse view**, **Doctor view**, **Mom view**, and **Reports**. All patients are made up.
 
 ```
 npm test        # danger rule tests
@@ -26,6 +26,9 @@ npm run build   # typecheck + production build
   - `src/data/moms.ts` – sample moms
   - `src/nurse/` – nurse screen, `src/doctor/` – doctor portal, `src/mom/` – mother's page
   - `src/data/workflow.tsx` – shared browser-local reviews, care actions, and continuity measures
+- `docs/REPORTING_AND_OPEN_DATA.md` – source-backed baseline selection, KPI definitions, charts and exports
+- `data/sources/` – pinned UCI CSV and published CDC PRAMS aggregate extracts
+- `scripts/build_open_data.py` – reproducible open-data preparation
 - `docs/DOCTOR_PORTAL.md` – doctor journey, KPI definitions, and demo limitations
 - `care-map.html` – research map: today's workflow, our workflow, rules, call script, sources
 - `build-map.html` – build plan and 3-minute demo script
