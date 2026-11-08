@@ -98,3 +98,39 @@ it("uses the same chronic-care history across SMS and voice and routes medical q
   expect(host.textContent).toContain("has not been accepted yet");
   expect(host.textContent).toContain("0/2 · 0%");
 });
+it("discards an appointment draft when switching patients", async () => {
+  const appointment = "Synthetic appointment time";
+  const record = "Record scheduled appointment";
+  await click("Confirm demo identity");
+  await input(appointment, "2027-01-12T15:30");
+  expect(button(record).disabled).toBe(false);
+
+  await select("Scenario", "episode-chronic");
+  await click("Confirm demo identity");
+  expect(host.querySelector<HTMLInputElement>('input[type="datetime-local"]')!.value).toBe("");
+  expect(button(record).disabled).toBe(true);
+});
+it("opens the guided care loop from the public overview", async () => {
+  await act(async () => {
+    location.hash = "";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  });
+  expect(host.querySelector("h1")?.textContent).toContain(
+    "Follow-up that reaches a verified outcome",
+  );
+  const start = host.querySelector<HTMLAnchorElement>('main a[href="#episodes"]')!;
+  expect(start.textContent).toContain("Start the care-loop demo");
+
+  await act(async () => {
+    location.hash = start.hash;
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  });
+  expect(host.querySelector('nav a[aria-current="page"]')?.textContent).toBe(
+    "Care loops",
+  );
+  expect(host.textContent).toContain("Walk through this scenario");
+  expect(host.textContent).toContain("I completed the test");
+
+  await select("Scenario", "episode-chronic");
+  expect(host.textContent).toContain("Should I change my medication dose?");
+});

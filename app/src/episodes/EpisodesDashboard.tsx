@@ -56,13 +56,14 @@ export default function EpisodesDashboard() {
   });
   const modeledCost = economics.total;
   const money = (n: number | null) => (n === null ? "N/A" : `$${n.toFixed(2)}`);
-  useEffect(() => {
+  const clearScenarioDrafts = () => {
     setText("");
     setTitle("");
+    setSchedule("");
     setCorrection("");
     setSpeechStatus("");
     if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
-  }, [selected]);
+  };
   useEffect(
     () => () => {
       if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
@@ -126,7 +127,10 @@ export default function EpisodesDashboard() {
               aria-label="Scenario"
               className="ml-2 rounded-lg border border-line p-2"
               value={selected}
-              onChange={(e) => setSelected(e.target.value)}
+              onChange={(e) => {
+                clearScenarioDrafts();
+                setSelected(e.target.value);
+              }}
             >
               {state.episodes.map((e) => (
                 <option key={e.id} value={e.id}>
@@ -149,6 +153,27 @@ export default function EpisodesDashboard() {
             </select>
           </label>
         </div>
+        <Card className="p-5">
+          <h2 className="font-bold text-navy">Walk through this scenario</h2>
+          <ol className="mt-3 grid gap-3 text-sm text-body sm:grid-cols-3">
+            <li className="rounded-lg bg-hover p-3">
+              <strong className="block text-navy">1. Connect</strong>
+              Confirm demo identity and start an interaction as the care coordinator.
+            </li>
+            <li className="rounded-lg bg-hover p-3">
+              <strong className="block text-navy">2. Collect or hand off</strong>
+              {selected === "episode-pp"
+                ? 'Send “I completed the test.” The episode records the patient report. End information collection.'
+                : 'Send “Should I change my medication dose?” The interaction ends and requests human review.'}
+            </li>
+            <li className="rounded-lg bg-hover p-3">
+              <strong className="block text-navy">3. Review the outcome</strong>
+              {selected === "episode-pp"
+                ? "Switch to Doctor, reconcile the synthetic completion fixture, then verify and close the episode."
+                : "Accept the handoff, switch to Doctor, then record human review. Evidence verification is a separate step."}
+            </li>
+          </ol>
+        </Card>
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
           <div className="min-w-0 space-y-5">
             <Card className="p-5">
@@ -747,8 +772,10 @@ export default function EpisodesDashboard() {
                 window.confirm(
                   "Reset both synthetic care episodes and their local event history?",
                 )
-              )
+              ) {
+                clearScenarioDrafts();
                 reset();
+              }
             }}
           >
             Reset episode demonstration
