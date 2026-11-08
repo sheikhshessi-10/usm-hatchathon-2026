@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { DEMO_AS_OF, status, LEVEL_TEXT, type Mom } from "../data/moms";
 import { LABEL, RANK, type Level } from "../lib/rules";
+import { CareAction } from "../ui/CareAction";
 import { BPChart, Card, Pill, Sparkline, levelStyle } from "../ui/parts";
 
 import { continuityMetrics, useCare } from "../data/workflow";
@@ -193,7 +194,7 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
   const [note, setNote] = useState(mom.nurseNote ?? "");
   const t = s.today;
   const summary = buildSummary(mom);
-  const { state, completeTask } = useCare();
+  const { state } = useCare();
   const doctorReviews = state.reviews.filter(r => r.patientId === mom.id);
 
   return (
@@ -232,7 +233,7 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
           <Card className="p-5"><h3 className="font-bold">Doctor coordination</h3>
             <a href={`#doctor/${mom.id}`} className="mt-2 inline-block text-sm font-bold text-navy underline">Open doctor review for {mom.name}</a>
             {doctorReviews.length ? doctorReviews.map((r,i)=><div key={i} className="mt-3 rounded-lg bg-ground p-3 text-sm"><b>{r.disposition}</b><p className="whitespace-pre-wrap">{r.note}</p></div>) : <p className="mt-2 text-sm text-body">Awaiting doctor assessment.</p>}
-            <ul className="mt-3 space-y-2">{state.tasks.filter(t=>t.patientId===mom.id).map(t=><li key={t.id} className="rounded-lg border border-line p-3 text-sm">{t.title}<p className="text-xs text-body">{t.owner} · due day {t.dueDay} · {t.completed ? "Completed" : "Pending"}</p>{!t.completed&&<button className="mt-2 text-sm font-bold text-navy underline" onClick={()=>completeTask(t.id)}>Record action completed</button>}</li>)}</ul>
+            <ul className="mt-3 space-y-2">{state.tasks.filter(t=>t.patientId===mom.id).map(t=><li key={t.id} className="rounded-lg border border-line p-3 text-sm">{t.title}<p className="text-xs text-body">{t.owner} · due day {t.dueDay} · {t.completed ? "Completed" : "Pending"}</p><CareAction task={t} actor="Nurse"/></li>)}</ul>
           </Card>
           {/* AI summary */}
           <Card className="p-5">

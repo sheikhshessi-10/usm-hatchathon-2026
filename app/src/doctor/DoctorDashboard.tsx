@@ -4,6 +4,7 @@ import { DEMO_AS_OF, LEVEL_TEXT, status, type Mom } from "../data/moms";
 import { continuityMetrics, useCare, type Review } from "../data/workflow";
 import { rate } from "../data/metrics";
 import { RANK } from "../lib/rules";
+import { CareAction } from "../ui/CareAction";
 import { BPChart, Card, Pill } from "../ui/parts";
 
 type Filter = "all" | "urgent" | "unreviewed" | "overdue";
@@ -37,7 +38,7 @@ export default function DoctorDashboard() {
         <Metric label="Overdue care actions" value={String(k.overdue)} detail="Incomplete actions past their due postpartum day" />
         <Metric label="Restored contact documented" value={rate(k.contactRestored,k.missed)} detail={`${k.contactRestored}/${k.missed} unreached patients with explicitly documented restored contact`} />
       </section>
-      <Card className="p-4 text-sm"><b>Continuity coverage:</b> {k.reviewed}/{k.enrolled} patients have a documented doctor review. {k.handoffRequests} follow-up handoff requests recorded; acceptance by the receiving team is not tracked. Clinical recovery, readmissions prevented, and time to response are not measured by this demo.</Card>
+      <Card className="p-4 text-sm"><b>Continuity coverage:</b> {k.reviewed}/{k.enrolled} patients have a documented doctor review. {k.handoffsPending} handoffs await receiving-role acceptance. {k.handoffsAccepted}/{k.handoffRequests} assigned actions accepted; {k.handoffsClosed}/{k.handoffRequests} accepted actions completed. Review dispositions alone do not create or close a handoff. Clinical recovery, readmissions prevented, and time to response are not measured by this demo.</Card>
       <div className="grid items-start gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
         <Card className="overflow-hidden">
           <div className="space-y-3 border-b border-line p-4">
@@ -54,7 +55,7 @@ export default function DoctorDashboard() {
 }
 function Metric({label,value,detail}:{label:string;value:string;detail:string}){return <Card className="p-5"><div className="text-xs font-semibold text-body">{label}</div><div className="mt-2 text-3xl font-extrabold text-navy">{value}</div><p className="mt-2 text-xs text-body">{detail}</p></Card>;}
 function PatientWorkspace({mom}:{mom:Mom}) {
-  const { state, review, addTask, completeTask } = useCare();
+  const { state, review, addTask } = useCare();
   const [note,setNote]=useState(""); const [disposition,setDisposition]=useState<Review["disposition"]>("reviewed");
   const [title,setTitle]=useState(""); const [owner,setOwner]=useState<"Doctor"|"Nurse">("Nurse"); const [due,setDue]=useState(String(mom.dayToday));
   const [contactOutcome,setContactOutcome]=useState<Review["contactOutcome"]>("not-recorded");
@@ -74,13 +75,13 @@ function PatientWorkspace({mom}:{mom:Mom}) {
     <Card className="p-5"><h3 className="flex items-center gap-2 font-bold"><Stethoscope size={17}/> Doctor assessment and disposition</h3>
       <form className="mt-4 space-y-3" onSubmit={e=>{e.preventDefault();review({patientId:mom.id,disposition,note,contactOutcome});setNote("");setSaved("Doctor review saved to the demo record.");}}>
         <label className="block text-sm font-semibold">Review note<textarea required maxLength={3000} value={note} onChange={e=>setNote(e.target.value)} rows={4} className="mt-1 w-full rounded-lg border border-line p-3 font-normal" placeholder="Assessment, uncertainty, action taken, and follow-up owner"/></label>
-        <label className="block text-sm font-semibold">Disposition<select value={disposition} onChange={e=>setDisposition(e.target.value as Review["disposition"])} className="ml-2 rounded-lg border border-line bg-white p-2"><option value="reviewed">Reviewed — no outcome inferred</option><option value="escalated">Escalation documented</option><option value="follow-up">Follow-up handoff requested</option></select></label>
+        <label className="block text-sm font-semibold">Disposition<select value={disposition} onChange={e=>setDisposition(e.target.value as Review["disposition"])} className="ml-2 rounded-lg border border-line bg-white p-2"><option value="reviewed">Reviewed — no outcome inferred</option><option value="escalated">Escalation documented</option><option value="follow-up">Follow-up needed — assign action below</option></select></label>
         <label className="block text-sm font-semibold">Contact outcome<select value={contactOutcome} onChange={e=>setContactOutcome(e.target.value as Review["contactOutcome"])} className="ml-2 rounded-lg border border-line bg-white p-2"><option value="not-recorded">Not recorded</option><option value="unreached">Patient not reached</option><option value="reached">Patient reached — documented in note</option></select></label>
         <button disabled={!note.trim()} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white disabled:opacity-40">Save doctor review</button>
       </form><p role="status" className="mt-2 text-sm text-green">{saved}</p>
       <ol className="mt-3 space-y-3">{[...reviews].reverse().map((r,i)=><li key={i} className="rounded-lg bg-ground p-3 text-sm"><div className="text-xs font-semibold text-body">{r.disposition} · {new Date(r.at).toLocaleString()}</div><p className="mt-1 whitespace-pre-wrap">{r.note}</p></li>)}</ol>
     </Card>
-    <Card className="p-5"><h3 className="flex items-center gap-2 font-bold"><ClipboardList size={17}/> Care actions and handoffs</h3><ul className="mt-3 space-y-3">{tasks.map(t=><li key={t.id} className="rounded-xl border border-line p-3 text-sm"><p className="font-semibold">{t.title}</p><p className="mt-1 text-xs text-body">{t.owner} · due postpartum day {t.dueDay} · {t.completed?"Completed":t.dueDay<mom.dayToday?"Overdue":"Pending"}</p>{!t.completed&&<button onClick={()=>completeTask(t.id)} className="mt-2 rounded-lg bg-hover px-3 py-2 text-xs font-bold text-navy">Record action completed</button>}</li>)}</ul>
+    <Card className="p-5"><h3 className="flex items-center gap-2 font-bold"><ClipboardList size={17}/> Care actions and handoffs</h3><ul className="mt-3 space-y-3">{tasks.map(t=><li key={t.id} className="rounded-xl border border-line p-3 text-sm"><p className="font-semibold">{t.title}</p><p className="mt-1 text-xs text-body">{t.owner} · due postpartum day {t.dueDay} · {t.completed?"Completed":t.dueDay<mom.dayToday?"Overdue":"Pending"}</p><CareAction task={t} actor="Doctor"/></li>)}</ul>
       <form className="mt-4 space-y-3 border-t border-line pt-4" onSubmit={e=>{e.preventDefault();addTask({patientId:mom.id,title,owner,dueDay:Number(due)});setTitle("");setSaved("Care action added; no external referral was sent.");}}>
         <label className="block text-sm font-semibold">New care action<input required maxLength={300} value={title} onChange={e=>setTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-line p-2 font-normal" placeholder="Specific next action and handoff"/></label>
         <div className="flex flex-wrap gap-3"><label className="text-sm">Owner<select value={owner} onChange={e=>setOwner(e.target.value as "Nurse"|"Doctor")} className="ml-2 rounded-lg border border-line bg-white p-2"><option>Nurse</option><option>Doctor</option></select></label><label className="text-sm">Due postpartum day<input required type="number" min="0" max="365" step="1" value={due} onChange={e=>setDue(e.target.value)} className="ml-2 w-20 rounded-lg border border-line p-2"/></label></div>

@@ -63,7 +63,7 @@ export default function MomDashboard() {
 
         <Card className="p-5"><h2 className="font-bold">Your care pathway: {mom.useCase}</h2>
           <p className="mt-2 text-sm">{mom.diagnosis}</p>
-          <ul className="mt-2 list-disc pl-5 text-sm">{state.tasks.filter(t=>t.patientId===mom.id).map(t=><li key={t.id}>{t.title} · {t.completed ? "completed" : `due postpartum day ${t.dueDay}`}</li>)}</ul>
+          <ul className="mt-2 list-disc pl-5 text-sm">{state.tasks.filter(t=>t.patientId===mom.id).map(t=><li key={t.id}>{t.title} · {t.completed ? "completed" : t.source === "doctor" && !t.acceptedAt ? `awaiting care-team acceptance · due day ${t.dueDay}` : t.acceptedAt ? `accepted by care team · due day ${t.dueDay}` : `due postpartum day ${t.dueDay}`}</li>)}</ul>
         </Card>
         {/* Reading */}
         <Card className="p-5">
