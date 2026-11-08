@@ -29,6 +29,7 @@ export default function DoctorDashboard() {
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gold"><Stethoscope size={16}/> CareBridge · Clinical workspace</div>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight">Doctor portal</h1>
         <p className="mt-2 max-w-2xl text-white/80">Close the gaps between discharge, outreach, clinical review, and the next care team.</p>
+        <a className="mt-3 inline-block text-sm font-bold text-gold underline" href="#reports">Open charts and reporting</a>
         <p className="mt-3 text-xs text-white/60">Synthetic cohort snapshot {DEMO_AS_OF} · browser-local demonstration · no prescriptions, referrals, or notifications are sent.</p>
       </header>
       {storageWarning && <p role="status" className="rounded-xl bg-amber-soft p-3 text-sm">Changes are available this session, but browser storage is unavailable.</p>}

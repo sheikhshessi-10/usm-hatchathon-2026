@@ -1,4 +1,5 @@
 // Made-up sample patients for the demo. No real people.
+import { OPEN_DATA } from "./openData";
 import { evaluate, worst, type BabyCheck, type CheckIn, type Finding, type Level, type MomSymptom } from "../lib/rules";
 
 export type Call = CheckIn & { time: string; transcript?: string; attempts: number };
@@ -20,6 +21,7 @@ export type Mom = {
   handled?: boolean;
   nurseNote?: string;
   useCase?: string;
+  openData?: { source: string; row: number; adaptedFields: string[] };
   concerns?: { level: Level; reason: string }[];
   careTasks?: { kind: string; dueDay: number; completedDay?: number; note: string }[];
   history?: {
@@ -171,6 +173,7 @@ const CASES: { useCase: string; concern?: { level: Level; reason: string }; task
 ];
 export const MOMS: Mom[] = BASE_MOMS.map((m, i) => {
   const c = CASES[i];
+  const anchor = OPEN_DATA.uci.anchors[i];
   const deliveryDate = new Date(Date.parse(DEMO_AS_OF + "T12:00:00Z") - m.dayToday * 86400000).toISOString().slice(0, 10);
   const hypertension = i < 2;
   const diabetes = i === 4 || i === 11;
@@ -178,12 +181,12 @@ export const MOMS: Mom[] = BASE_MOMS.map((m, i) => {
   const recordCalls = m.calls.map((call, index) => index === m.calls.length - 1 && c.concern
     ? { ...call, transcript: `Synthetic patient report: ${c.concern.reason}.`, symptoms: symptomByCase[i] ? [symptomByCase[i]] : call.symptoms }
     : call);
-  return { ...m, calls: recordCalls, useCase: c.useCase, concerns: c.concern ? [c.concern] : [],
+  return { ...m, age: anchor.age, openData: { source: OPEN_DATA.uci.doi, row: anchor.row, adaptedFields: ["age", "modeled prenatal BP"] }, calls: recordCalls, useCase: c.useCase, concerns: c.concern ? [c.concern] : [],
     careTasks: [{ kind: c.task, dueDay: c.due, completedDay: c.completed, note: c.note }],
     history: {
       synthetic: true, deliveryDate, gestationalWeeks: [37, 38, 39, 38, 39, 39, 38, 39, 39, 40, 39, 39, 38, 39, 39][i],
       prenatal: [
-        { gestationalWeek: 20, bp: [118 + (i % 4) * 2, 74 + (i % 3) * 2], note: "Routine prenatal assessment" },
+        { gestationalWeek: 20, bp: [anchor.systolic, anchor.diastolic], note: `Modeled prenatal baseline; values adapted from UCI observation ${anchor.row}. Gestational timing is synthetic.` },
         { gestationalWeek: 36, bp: hypertension ? [144, 92] : [120 + (i % 3) * 2, 76 + (i % 2) * 2], note: hypertension ? m.diagnosis : diabetes ? "Gestational diabetes; diet and glucose monitoring documented" : "Routine third trimester assessment" },
       ],
       dischargeDay: m.delivery.startsWith("C-section") ? 3 : 2,

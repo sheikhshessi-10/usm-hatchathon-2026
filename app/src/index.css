@@ -7,3 +7,14 @@ body { @apply bg-ground text-ink; }
 ::selection { background: #f5d90a; color: #0a2a4d; }
 :focus-visible { outline: 2px solid #8a7500; outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+
+@media print {
+  body { background: white; }
+  main { padding: 0 !important; }
+  .shadow-2xl { box-shadow: none; }
+  table { font-size: 10px; }
+  tr, svg { break-inside: avoid; }
+  details { display: block; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
