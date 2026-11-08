@@ -6,9 +6,9 @@ import { BPChart, Card } from "../ui/parts";
 
 const MOM_TEXT: Record<Level, { title: string; body: string }> = {
   red911: { title: "Call 911 now", body: "What you told us today can be an emergency. Call 911 and say: \"I gave birth on November 3.\"" },
-  red: { title: "Go to the ER or call your doctor now", body: "Your blood pressure is in the danger range. Your nurse has been told and will call you. Don't wait." },
-  yellow: { title: "Your nurse will check on you today", body: "Your numbers are a little high. Keep taking your medicine. Your nurse has been told." },
-  green: { title: "You're on track today", body: "Your numbers look good. Keep checking every day. We'll call you tomorrow at 9 AM." },
+  red: { title: "Go to the ER or call your doctor now", body: "A reported concern needs urgent clinical assessment. This demo does not notify a nurse or place a call." },
+  yellow: { title: "Your care plan needs review", body: "A reported concern or care gap needs review. In this demo, no nurse notification is sent." },
+  green: { title: "You're on track today", body: "No flagged concern is recorded in this demo today. Follow the individual care plan; this is not a medical clearance." },
 };
 
 export default function MomDashboard() {
@@ -53,12 +53,16 @@ export default function MomDashboard() {
           </div>
           {s.level.startsWith("red") && (
             <div className="mt-4 rounded-xl bg-white/15 px-4 py-3 text-sm">
-              <div className="font-bold">Nearest ER</div>
-              <div className="text-white/90">Forrest General Hospital, 6051 US-49, Hattiesburg</div>
+              <div className="font-bold">Demo care routing</div>
+              <div className="text-white/90">No real emergency routing or location service is connected.</div>
             </div>
           )}
         </section>
 
+        <Card className="p-5"><h2 className="font-bold">Your care pathway: {mom.useCase}</h2>
+          <p className="mt-2 text-sm">{mom.diagnosis}</p>
+          <ul className="mt-2 list-disc pl-5 text-sm">{mom.careTasks?.map(task => <li key={task.kind}>{task.note} · {task.completedDay !== undefined ? "completed" : `due postpartum day ${task.dueDay}`}</li>)}</ul>
+        </Card>
         {/* Reading */}
         <Card className="p-5">
           <div className="flex items-center justify-between">
@@ -70,7 +74,7 @@ export default function MomDashboard() {
               <div className="mt-2 flex items-baseline gap-2">
                 <span className="text-5xl font-extrabold tabular-nums tracking-tight">{t.sys}<span className="text-body">/</span>{t.dia}</span>
               </div>
-              <p className="mt-1 text-sm text-body">Your goal at home: under 150/100.</p>
+              <p className="mt-1 text-sm text-body">Synthetic reading for demonstration; individual targets require a clinician.</p>
             </>
           ) : (
             <p className="mt-2 text-[15px]">We couldn't reach you today. Please check your blood pressure and call us back at <b>(601) 555-0100</b>.</p>
@@ -126,3 +130,4 @@ function BabyStat({ icon, label, value, goal }: { icon: React.ReactNode; label: 
 }
 
 export type { Mom };
+
