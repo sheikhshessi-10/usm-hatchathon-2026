@@ -56,13 +56,14 @@ export default function EpisodesDashboard() {
   });
   const modeledCost = economics.total;
   const money = (n: number | null) => (n === null ? "N/A" : `$${n.toFixed(2)}`);
-  useEffect(() => {
+  const clearScenarioDrafts = () => {
     setText("");
     setTitle("");
+    setSchedule("");
     setCorrection("");
     setSpeechStatus("");
     if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
-  }, [selected]);
+  };
   useEffect(
     () => () => {
       if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
@@ -126,7 +127,10 @@ export default function EpisodesDashboard() {
               aria-label="Scenario"
               className="ml-2 rounded-lg border border-line p-2"
               value={selected}
-              onChange={(e) => setSelected(e.target.value)}
+              onChange={(e) => {
+                clearScenarioDrafts();
+                setSelected(e.target.value);
+              }}
             >
               {state.episodes.map((e) => (
                 <option key={e.id} value={e.id}>
@@ -747,8 +751,10 @@ export default function EpisodesDashboard() {
                 window.confirm(
                   "Reset both synthetic care episodes and their local event history?",
                 )
-              )
+              ) {
+                clearScenarioDrafts();
                 reset();
+              }
             }}
           >
             Reset episode demonstration
