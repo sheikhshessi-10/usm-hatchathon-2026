@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AlertTriangle, Baby, CalendarDays, Droplets, HeartPulse, LifeBuoy, PhoneCall, Siren, Thermometer, Utensils } from "lucide-react";
-import { MOMS, status, type Mom } from "../data/moms";
+import { status, type Mom } from "../data/moms";
+import { useCare } from "../data/workflow";
 import type { Level } from "../lib/rules";
 import { BPChart, Card } from "../ui/parts";
 
@@ -12,6 +13,7 @@ const MOM_TEXT: Record<Level, { title: string; body: string }> = {
 };
 
 export default function MomDashboard() {
+  const { moms: MOMS, state } = useCare();
   const [momId, setMomId] = useState("m1");
   const mom = MOMS.find((m) => m.id === momId)!;
   const s = status(mom);
@@ -61,7 +63,7 @@ export default function MomDashboard() {
 
         <Card className="p-5"><h2 className="font-bold">Your care pathway: {mom.useCase}</h2>
           <p className="mt-2 text-sm">{mom.diagnosis}</p>
-          <ul className="mt-2 list-disc pl-5 text-sm">{mom.careTasks?.map(task => <li key={task.kind}>{task.note} · {task.completedDay !== undefined ? "completed" : `due postpartum day ${task.dueDay}`}</li>)}</ul>
+          <ul className="mt-2 list-disc pl-5 text-sm">{state.tasks.filter(t=>t.patientId===mom.id).map(t=><li key={t.id}>{t.title} · {t.completed ? "completed" : `due postpartum day ${t.dueDay}`}</li>)}</ul>
         </Card>
         {/* Reading */}
         <Card className="p-5">
