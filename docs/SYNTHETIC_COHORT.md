@@ -1,3 +1,5 @@
+> Updated data model: age and modeled prenatal BP are now deterministically adapted from the UCI open dataset, with per-patient row provenance. See REPORTING_AND_OPEN_DATA.md and data/sources/README.md. The original authored case mix and postpartum trajectories below remain synthetic; they are not population calibrated.
+
 # Maternal continuity-of-care synthetic cohort v1
 
 Snapshot: 2026-11-08. Exactly 15 fictional mother–baby dyads. No real records, identifiers, scraped patient data, or inferred diagnoses. Contact numbers use the reserved fictional 555-0100–0199 range. This is a hand-authored, deterministic scenario dataset, not a Synthea export, an LLM-generated clinical record, or an OMOP/FHIR implementation. No random process is used; versioned source reproduces the same snapshot.
