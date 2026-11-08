@@ -1,0 +1,508 @@
+<title>Postpartum Care Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: clinical chart. Header facts strip, then a swimlane map (phases x people), then the rule cards a nurse would use. */
+:root{
+  --bg:#f5f7f8; --panel:#ffffff; --ink:#14212b; --muted:#566673; --line:#d9e1e6;
+  --accent:#0f6e74; --accent-soft:#e2f1f1;
+  --danger:#b4232c; --danger-soft:#fbe7e8; --warn:#9a5b00; --warn-soft:#fdf1dc; --ok:#2f7a3d; --ok-soft:#e5f3e7;
+  --lane-mom:#eef3fb; --lane-nurse:#f2f0f8; --lane-doc:#eef6f2; --lane-baby:#fbf3ec;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-head:"Source Serif 4",Georgia,serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f171d; --panel:#16212a; --ink:#e6edf1; --muted:#9aabb7; --line:#2a3943;
+  --accent:#5cc2c7; --accent-soft:#163538;
+  --danger:#f0727a; --danger-soft:#3a1c20; --warn:#e8b158; --warn-soft:#3a2c14; --ok:#7fcb8c; --ok-soft:#1b3322;
+  --lane-mom:#18232f; --lane-nurse:#1d1d2b; --lane-doc:#16261f; --lane-baby:#2a2119; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f171d; --panel:#16212a; --ink:#e6edf1; --muted:#9aabb7; --line:#2a3943;
+  --accent:#5cc2c7; --accent-soft:#163538;
+  --danger:#f0727a; --danger-soft:#3a1c20; --warn:#e8b158; --warn-soft:#3a2c14; --ok:#7fcb8c; --ok-soft:#1b3322;
+  --lane-mom:#18232f; --lane-nurse:#1d1d2b; --lane-doc:#16261f; --lane-baby:#2a2119; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 60px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2{font-family:var(--f-head);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:clamp(28px,4vw,40px)}
+h2{font-size:24px}
+h3{margin:0;font-size:15px}
+p{margin:0}
+.lede{max-width:68ch;color:var(--muted);font-size:17px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+header{display:flex;flex-direction:column;gap:12px}
+section{display:flex;flex-direction:column;gap:16px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.fact{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.fact b{font-family:var(--f-mono);font-size:24px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.fact span{font-size:13px;color:var(--muted)}
+.fact a{font-size:12px;color:var(--accent)}
+/* toggle */
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--panel);gap:2px;align-self:flex-start}
+.toggle button{font:600 14px var(--f-body);border:0;background:transparent;color:var(--muted);padding:8px 16px;border-radius:999px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--accent);color:var(--panel)}
+.toggle button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* swimlane */
+.mapbox{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.map{display:grid;grid-template-columns:120px repeat(6,minmax(165px,1fr));min-width:1120px}
+.map .ph{padding:12px 12px;border-bottom:2px solid var(--ink);font-weight:700;font-size:13px;display:flex;flex-direction:column;gap:2px}
+.map .ph small{font-weight:500;color:var(--muted);font-size:12px}
+.map .ph.danger{border-bottom-color:var(--danger);color:var(--danger)}
+.map .lane{padding:12px;font-weight:700;font-size:13px;border-top:1px solid var(--line)}
+.map .cell{padding:10px 10px 14px;border-top:1px solid var(--line);border-left:1px solid var(--line);display:flex;flex-direction:column;gap:6px;font-size:13px;min-width:0}
+.l-mom{background:var(--lane-mom)} .l-nurse{background:var(--lane-nurse)} .l-doc{background:var(--lane-doc)} .l-baby{background:var(--lane-baby)}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.gap{background:var(--danger-soft);border:1px solid var(--danger);color:var(--ink);border-radius:6px;padding:6px 8px}
+.gap::before{content:"GAP  ";font:600 11px var(--f-mono);color:var(--danger);letter-spacing:.05em}
+.new{background:var(--accent-soft);border:1px solid var(--accent);border-radius:6px;padding:6px 8px}
+.new::before{content:"CAREBRIDGE  ";font:600 11px var(--f-mono);color:var(--accent);letter-spacing:.05em}
+.map[data-view="today"] .new{display:none}
+.map[data-view="future"] .gap{opacity:.45;text-decoration:line-through;text-decoration-color:var(--danger)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+/* timeline strip */
+.days{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:4px;font:500 12px var(--f-mono);text-align:center}
+.days div{padding:8px 2px;border-radius:4px;background:var(--panel);border:1px solid var(--line)}
+.days .hot{background:var(--danger-soft);border-color:var(--danger);color:var(--danger)}
+.days .vis{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.daynotes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;font-size:14px;color:var(--muted)}
+/* rule cards */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.tier{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:start;font-size:14px}
+.pill{font:600 11px var(--f-mono);letter-spacing:.04em;padding:4px 8px;border-radius:999px;text-align:center;text-transform:uppercase}
+.p-911{background:var(--danger);color:var(--panel)}
+.p-er{background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger)}
+.p-now{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+.p-24{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
+.p-ok{background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok)}
+.src{font-size:12px;color:var(--muted)}
+.src a{color:var(--accent)}
+ol.script{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+ul.plain{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.callout{border-left:4px solid var(--warn);background:var(--warn-soft);padding:12px 14px;border-radius:0 8px 8px 0;font-size:14px;max-width:80ch}
+.sources{font-size:13px;columns:2 320px;column-gap:28px}
+.sources li{break-inside:avoid;margin-bottom:6px}
+.sources a{color:var(--accent);word-break:break-word}
+@media (prefers-reduced-motion:no-preference){.toggle button{transition:background .15s}}
+/* two workflows */
+.flows{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;align-items:start}
+.flowcol{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:0;min-width:0}
+.flowcol h3{font-family:var(--f-head);font-size:20px;margin-bottom:4px}
+.flowcol>p{font-size:13px;color:var(--muted);margin-bottom:14px}
+.fs{border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;background:var(--bg);display:flex;flex-direction:column;gap:3px}
+.fs b{font-size:14px}
+.fs span{font-size:13px;color:var(--muted)}
+.fs.bad{border-color:var(--danger);background:var(--danger-soft)}
+.fs.bad span{color:var(--ink)}
+.fs.ai{border-color:var(--accent);background:var(--accent-soft)}
+.fs.rule{border-color:var(--warn);background:var(--warn-soft)}
+.fs.end{border-width:2px}
+.tagrow{display:flex;gap:6px;flex-wrap:wrap}
+.tg{font:600 10px var(--f-mono);letter-spacing:.05em;padding:2px 7px;border-radius:999px;text-transform:uppercase}
+.tg-ai{background:var(--accent);color:var(--panel)}
+.tg-rule{background:var(--warn);color:var(--panel)}
+.tg-gap{background:var(--danger);color:var(--panel)}
+.tg-human{background:var(--ink);color:var(--panel)}
+.down{align-self:center;font:700 16px var(--f-mono);color:var(--muted);line-height:1;padding:5px 0}
+.branch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.branch .fs{font-size:13px;padding:8px}
+.branch .g{border-color:var(--ok);background:var(--ok-soft)}
+.branch .y{border-color:var(--warn);background:var(--warn-soft)}
+.branch .r{border-color:var(--danger);background:var(--danger-soft)}
+.branch2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tg-check{background:transparent;color:var(--warn);border:1px dashed var(--warn)}
+.fs.unver{border-style:dashed}
+.truth{font-size:12px;color:var(--ink);border-top:1px dashed var(--line);padding-top:6px;margin-top:4px}
+.truth b{font-size:12px}
+.product{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.surf{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.surf h3{font-size:16px}
+.surf ul{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.st{font:600 10px var(--f-mono);letter-spacing:.05em;padding:3px 8px;border-radius:999px;text-transform:uppercase;align-self:flex-start}
+.st-built{background:var(--ok);color:var(--panel)}
+.st-next{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+.st-later{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
+.shots{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start;margin:0}
+@media (max-width:760px){.shots{grid-template-columns:1fr}}
+.shots figure{margin:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.shots img{border:1px solid var(--line);border-radius:10px;width:100%;height:auto;display:block}
+.shots figcaption{font-size:13px;color:var(--muted)}
+.loopnote{margin-top:12px;border:1px dashed var(--warn);border-radius:8px;padding:10px 12px;font-size:13px;background:var(--warn-soft)}
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">USM Hatchathon 2026 · Bio track · Research map</span>
+  <h1>How a high blood pressure mom moves through care today</h1>
+  <p class="lede">From pregnancy to one year after birth, in Mississippi. Every number and rule here comes from a published source, listed at the bottom. Flip the switch on the map to see where our product steps in.</p>
+</header>
+
+<section aria-label="Key facts">
+  <div class="facts">
+    <div class="fact"><b>33,473</b><span>Mississippi births in 2024. Medicaid paid for 53.5%.</span><a href="https://www.kff.org/state-health-policy-data/state-indicator/births-by-source-of-payment-for-delivery/">KFF</a></div>
+    <div class="fact"><b>16.4%</b><span>of births had high blood pressure: 11.1% started in pregnancy, 5.3% before. About 5,500 moms a year.</span><a href="https://www.marchofdimes.org/peristats/reports/mississippi/report-card">March of Dimes</a></div>
+    <div class="fact"><b>82%</b><span>of pregnancy-related deaths in Mississippi were preventable. High blood pressure is a top cause.</span><a href="https://msdcoe.org/wp-content/uploads/2026/04/Mississippi-Maternal-Mortality-Review-Committee-Report-2025.pdf">MS MMRC 2025</a></div>
+    <div class="fact"><b>Day 3–6</b><span>Blood pressure rises again after birth, usually after mom is already home.</span><a href="https://s3.amazonaws.com/cdn.smfm.org/attachments/818/b8d458a5f777f5295a37dc7adf4a72c0.pdf">SMFM</a></div>
+    <div class="fact"><b>50–70%</b><span>of high blood pressure moms miss the blood pressure check they should get 7–10 days after birth.</span><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10428007/">Hoppe et al.</a></div>
+    <div class="fact"><b>9.7</b><span>babies per 1,000 died before age 1 in 2024. The state declared a public health emergency.</span><a href="https://abcnews.com/GMA/Wellness/mississippi-declares-public-health-emergency-infant-mortality-rates/story?id=124885120">MSDH via ABC</a></div>
+  </div>
+</section>
+
+<section aria-labelledby="flows-h">
+  <h2 id="flows-h">Two workflows: today vs. with CareBridge</h2>
+  <div class="legend">
+    <span><span class="tg tg-human">Person</span> a person does it</span>
+    <span><span class="tg tg-gap">Gap</span> where it breaks</span>
+    <span><span class="tg tg-ai">AI</span> AI does it</span>
+    <span><span class="tg tg-rule">Rules</span> fixed medical rules, no AI guessing</span>
+  </div>
+  <div class="flows">
+
+    <div class="flowcol" aria-label="Today's workflow">
+      <h3>Today</h3>
+      <p>Built from the SMFM checklist, AIM bundle, POST-BIRTH, and real hospital call scripts.</p>
+      <div class="fs"><div class="tagrow"><span class="tg tg-human">Person</span></div><b>1. Birth and hospital stay (2–4 days)</b><span>Nurses check blood pressure every 4 hours. 160/110 or higher gets treated within 30–60 minutes.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs bad"><div class="tagrow"><span class="tg tg-human">Person</span><span class="tg tg-gap">Gap</span></div><b>2. Discharge</b><span>Nurse teaches warning signs in one rushed session. Mom gets paper, prescriptions, and "make an appointment." Often not booked.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs bad"><div class="tagrow"><span class="tg tg-gap">Gap</span></div><b>3. Home: mom is the only one watching</b><span>She has to notice danger in herself and the baby, while exhausted.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs bad"><div class="tagrow"><span class="tg tg-human">Person</span><span class="tg tg-gap">Gap</span></div><b>4. Maybe one nurse call, 48–72 hours</b><span>Only some hospitals. Done by hand, once, if a nurse has time.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs"><b>5. Days 3–6: blood pressure rises</b><span>Does she notice and act?</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="branch2">
+        <div class="fs bad end"><b>No</b><span>Headache feels "normal after birth." She waits. Can end in seizure, stroke, ER, or death.</span></div>
+        <div class="fs"><b>Yes</b><span>She calls the office or drives to an ER, often far away in rural Mississippi.</span></div>
+      </div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs bad"><div class="tagrow"><span class="tg tg-gap">Gap</span></div><b>6. Blood pressure check (3–10 days)</b><span>50–70% of these moms miss it.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs bad end"><div class="tagrow"><span class="tg tg-human">Person</span><span class="tg tg-gap">Gap</span></div><b>7. Follow-up visit</b><span>Doctor has no data from home. Only what she remembers.</span></div>
+    </div>
+
+    <div class="flowcol" aria-label="CareBridge workflow">
+      <h3>With CareBridge</h3>
+      <p>Same medical rules. The AI does the listening, reading and writing. People make every medical decision.</p>
+      <div class="fs ai"><div class="tagrow"><span class="tg tg-ai">AI</span></div><b>1. Discharge papers go in</b><span>AI reads them: diagnosis, blood pressure history, medicines, doctor's orders, baby info.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs ai"><div class="tagrow"><span class="tg tg-ai">AI</span><span class="tg tg-rule">Rules</span></div><b>2. Her own care plan</b><span>Her danger numbers (from the hospital's rules or SMFM/AIM), her questions, daily calls for 10 days. Nurse approves it.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs ai"><div class="tagrow"><span class="tg tg-ai">AI</span></div><b>3. Daily voice call, any phone</b><span>"What's your blood pressure? Any headache, blurry vision, chest pain? How many wet diapers? Any fever?" Smartphone moms also get a text link.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs ai"><div class="tagrow"><span class="tg tg-ai">AI</span></div><b>4. AI listener</b><span>Turns "one sixty-six over one twelve, bad headache" into 166/112 + headache. Repeats it back. Asks again if unsure.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs rule"><div class="tagrow"><span class="tg tg-rule">Rules</span></div><b>5. Danger check</b><span>Fixed rules for mom and baby, plus the trend over the last days.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="branch">
+        <div class="fs g"><b>Green</b><span>Saved. Call again tomorrow.</span></div>
+        <div class="fs y"><b>Yellow</b><span>Nurse reviews today. Doctor sees the rising trend.</span></div>
+        <div class="fs r"><b>Red</b><span>Mom told "ER now" or "call 911." Nurse alerted instantly.</span></div>
+      </div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs"><div class="tagrow"><span class="tg tg-human">Person</span></div><b>6. Nurse acts</b><span>Calls her, gets the doctor, adjusts care. Marks the alert handled.</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs ai unver"><div class="tagrow"><span class="tg tg-ai">AI</span><span class="tg tg-check">Not checked yet</span></div><b>7. Writes the nurse's chart notes</b><span>After each call and alert, the AI drafts the note: what was asked, what mom said, what the nurse did. Nurse reviews and signs.</span><p class="truth"><b>Honest status:</b> a logical guess. Nurses normally record patient calls, but we found no source on how these follow-up calls are recorded today or how long it takes. Ask the nurse: "After a follow-up call, what do you write down, and where?"</p></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs ai unver"><div class="tagrow"><span class="tg tg-ai">AI</span><span class="tg tg-check">Half proven</span></div><b>8. Builds the safety report</b><span>Counts what the hospital must report: moms reached, alerts, time to nurse action, checks done on time.</span><p class="truth"><b>Honest status:</b> proven that the AIM high blood pressure safety bundle has a required "Reporting" part, and that Blue Cross Blue Shield of Mississippi reviews hospitals on these bundles every quarter. NOT proven: which exact numbers hospitals report, or how much work it is. Ask the nurse: "What do you report for the blood pressure safety program, and who puts it together?"</p></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs ai"><div class="tagrow"><span class="tg tg-ai">AI</span></div><b>9. One record, always growing</b><span>Every call, reading, symptom, alert and nurse note. AI writes a short summary: "what to look at."</span></div>
+      <div class="down" aria-hidden="true">↓</div>
+      <div class="fs end"><div class="tagrow"><span class="tg tg-human">Person</span></div><b>10. Follow-up visit</b><span>Doctor opens her timeline: 10 days of readings and symptoms. Mom sees her own progress page.</span></div>
+      <div class="loopnote"><b>Never drops her:</b> no answer → call again in 1 hour → text → nurse flagged. A red alert stays open until a nurse marks it handled.</div>
+    </div>
+
+  </div>
+</section>
+
+<section aria-labelledby="product-h">
+  <h2 id="product-h">The whole product</h2>
+  <p class="lede">Six parts. Two are built as a working first version, in the same look as LGS Bid Intelligence: navy and gold on a soft gray background. The rest is the plan.</p>
+  <div class="product">
+    <div class="surf"><span class="st st-built">Built</span><h3>1. Nurse screen</h3><ul><li>Every mom sorted: Act now, Review today, On track</li><li>Today's reading, the reason, and a 7-day line</li><li>Open a mom: alert, AI "what to look at," chart, every call, care plan</li><li>Nurse note + "Mark handled"</li></ul></div>
+    <div class="surf"><span class="st st-built">Built</span><h3>2. Mom's page</h3><ul><li>Opens from a text link on her phone</li><li>Today in plain words: on track, nurse will call, or go to the ER now</li><li>Her blood pressure and her week</li><li>Baby: feeds, wet diapers, temperature</li><li>Warning signs, care team, next call, next visit</li></ul></div>
+    <div class="surf"><span class="st st-next">Next</span><h3>3. Daily voice call</h3><ul><li>Calls any phone at her chosen time</li><li>Asks blood pressure, symptoms, baby questions</li><li>AI listener turns speech into numbers and repeats them back</li><li>No answer: call again, then text, then tell the nurse</li><li>Needs: a Twilio account + phone number, and a Claude key</li></ul></div>
+    <div class="surf"><span class="st st-next">Next</span><h3>4. Doctor timeline</h3><ul><li>Same record as the nurse screen</li><li>10 days of readings, symptoms, medicines, alerts</li><li>One-page summary before the follow-up visit</li></ul></div>
+    <div class="surf"><span class="st st-later">Later</span><h3>5. Discharge intake</h3><ul><li>Upload discharge papers; AI builds her plan</li><li>Nurse checks and approves before calls start</li></ul></div>
+    <div class="surf"><span class="st st-later">Later</span><h3>6. Hospital settings + reports</h3><ul><li>The hospital's own danger numbers and call script</li><li>Safety report (half proven, see flow step 8)</li><li>Mississippi map of high blood pressure by county</li></ul></div>
+  </div>
+  <div class="shots">
+    <figure><img src="screens/cb-nurse.jpg" alt="Nurse screen: navy header with alert counts, then a list of moms sorted by urgency" loading="lazy"><figcaption>Nurse screen. Sample moms only; none are real people.</figcaption></figure>
+    <figure><img src="screens/cb-mom.jpg" alt="Mom's page on a phone: day 5 of 10, a red go-to-the-ER box, today's blood pressure 166/112, baby stats" loading="lazy"><figcaption>Mom's page, on her phone.</figcaption></figure>
+  </div>
+  <figure class="shots" style="grid-template-columns:1fr"><img src="screens/cb-drawer.jpg" alt="Nurse opens Keisha: alert for 166/112 and rising 3 days, AI summary, blood pressure chart" loading="lazy"><figcaption>A nurse opens one mom: the alert, what to look at, and her chart since going home.</figcaption></figure>
+</section>
+
+<section aria-labelledby="map-h">
+  <h2 id="map-h">The full journey, by who does what</h2>
+  <div class="toggle" role="group" aria-label="Map view">
+    <button type="button" id="v-today" aria-pressed="true">Today</button>
+    <button type="button" id="v-future" aria-pressed="false">With CareBridge</button>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--panel);border:1px solid var(--line)"></i>Standard step</span>
+    <span><i style="background:var(--danger-soft);border:1px solid var(--danger)"></i>Where it breaks</span>
+    <span><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>What CareBridge does</span>
+  </div>
+  <div class="mapbox" tabindex="0" aria-label="Care journey map, scrolls sideways">
+    <div class="map" id="map" data-view="today">
+      <div class="ph"></div>
+      <div class="ph">1. Pregnancy<small>prenatal visits</small></div>
+      <div class="ph">2. Hospital stay<small>birth + 2–4 days</small></div>
+      <div class="ph">3. Going home<small>discharge day</small></div>
+      <div class="ph danger">4. Home, days 1–10<small>danger window</small></div>
+      <div class="ph">5. Checkups<small>3 days to 12 weeks</small></div>
+      <div class="ph">6. Up to 1 year<small>Medicaid lasts 12 months</small></div>
+
+      <!-- MOM -->
+      <div class="lane l-mom">Mom</div>
+      <div class="cell l-mom">
+        <div class="step">Blood pressure checked at each prenatal visit.</div>
+        <div class="step">Labeled if 140/90 or higher, twice, 4 hours apart, after 20 weeks.</div>
+        <div class="gap">Almost half of Mississippi counties have no birth doctor or birthing hospital. About 1 in 4 women live 30+ minutes from one.</div>
+      </div>
+      <div class="cell l-mom">
+        <div class="step">Gives birth. Blood pressure watched by nurses.</div>
+        <div class="step">May go home on blood pressure medicine (often nifedipine or labetalol).</div>
+      </div>
+      <div class="cell l-mom">
+        <div class="step">Gets warning signs (POST-BIRTH sheet), prescriptions, and "make an appointment."</div>
+        <div class="gap">She is exhausted, holding a newborn, and handed paper. Appointment is often not booked before she leaves.</div>
+        <div class="new">Discharge papers go in. Her own plan is built: her medicines, her danger numbers, her call times.</div>
+      </div>
+      <div class="cell l-mom">
+        <div class="step">Expected to check herself and call if something feels wrong.</div>
+        <div class="gap">Pressure rises on days 3–6. Headache and swelling feel "normal after birth," so she waits.</div>
+        <div class="gap">Remote programs (UMMC, Penn, UF) need a smartphone, internet, or a Bluetooth cuff. 20% of rural adults have no home internet.</div>
+        <div class="new">Daily voice call on any phone. She reads her cuff number and answers symptom questions. Text link for smartphone moms.</div>
+      </div>
+      <div class="cell l-mom">
+        <div class="step">Blood pressure check due: within 72 hours if severe or on medicine, 7–10 days if not.</div>
+        <div class="step">Contact with OB within 3 weeks. Full visit by 12 weeks.</div>
+        <div class="gap">50–70% miss the early blood pressure check. Barriers: no ride, no childcare, work, distance.</div>
+        <div class="new">Call reminds her, and flags missed checks to the nurse.</div>
+      </div>
+      <div class="cell l-mom">
+        <div class="step">Lifelong higher heart risk. Should get yearly blood pressure check.</div>
+        <div class="gap">38% of Mississippi pregnancy deaths happen 6 weeks to 1 year after birth. Follow-up fades.</div>
+        <div class="new">Mom's progress page shows her readings over time.</div>
+      </div>
+
+      <!-- NURSE -->
+      <div class="lane l-nurse">Hospital nurse</div>
+      <div class="cell l-nurse"><div class="step">Clinic nurse takes vitals at visits.</div></div>
+      <div class="cell l-nurse">
+        <div class="step">Checks blood pressure every 4 hours after birth until stable.</div>
+        <div class="step">If 160/110 or higher for 15+ minutes: treat within 30–60 minutes.</div>
+        <div class="step">Don't discharge until pressure is controlled for 24 hours (MS toolkit).</div>
+      </div>
+      <div class="cell l-nurse">
+        <div class="step">Teaches warning signs, medicines, how to take blood pressure, when to call.</div>
+        <div class="step">SMFM checklist: check she has a cuff, a phone, a ride, a visit booked.</div>
+        <div class="gap">One rushed session. No way to know what she understood.</div>
+      </div>
+      <div class="cell l-nurse">
+        <div class="step">Some hospitals: ONE phone call 48–72 hours after discharge, using a standard script (mom + baby).</div>
+        <div class="gap">One call, done by hand, only if a nurse has time. One hospital reached 84% of moms on that one call.</div>
+        <div class="new">Nurse screen: every mom green, yellow or red. Red moms jump to the top with a short summary.</div>
+        <div class="new">Keeps calling until she answers and the nurse marks the alert handled.</div>
+      </div>
+      <div class="cell l-nurse"><div class="step">Clinic nurse rechecks blood pressure at the visit.</div></div>
+      <div class="cell l-nurse"><div class="step">Little to none.</div></div>
+
+      <!-- DOCTOR -->
+      <div class="lane l-doc">OB doctor</div>
+      <div class="cell l-doc"><div class="step">Diagnoses: gestational high blood pressure, preeclampsia, or chronic.</div></div>
+      <div class="cell l-doc">
+        <div class="step">Severe range: 160/110 or higher. Gives IV labetalol, hydralazine, or oral nifedipine.</div>
+        <div class="step">Magnesium for severe features, 24 hours after birth.</div>
+      </div>
+      <div class="cell l-doc">
+        <div class="step">Writes discharge orders and prescriptions.</div>
+        <div class="step">Home target: under 150/100. Call right away if 160/110 or higher (SMFM).</div>
+      </div>
+      <div class="cell l-doc">
+        <div class="step">On call if a nurse escalates. Adjusts medicine by phone.</div>
+        <div class="gap">Only hears about her if she calls in or shows up at the ER.</div>
+        <div class="new">Gets a summary when the trend rises: "pressure up 3 days in a row, headache today, check medicine dose."</div>
+      </div>
+      <div class="cell l-doc">
+        <div class="step">Sees her at the follow-up visit.</div>
+        <div class="gap">No data from home. Only what she remembers.</div>
+        <div class="new">Opens her timeline: every reading, symptom, medicine and alert since discharge.</div>
+      </div>
+      <div class="cell l-doc"><div class="step">Should hand her to a primary care doctor for lifelong blood pressure care.</div></div>
+
+      <!-- BABY -->
+      <div class="lane l-baby">Baby + pediatrician</div>
+      <div class="cell l-baby"><div class="step">Mississippi preterm birth rate 15.0%, last in the nation.</div></div>
+      <div class="cell l-baby"><div class="step">Jaundice test before discharge. Feeding and weight checked.</div></div>
+      <div class="cell l-baby"><div class="step">Parents taught safe sleep, feeding, diaper counts, fever and yellow skin signs.</div></div>
+      <div class="cell l-baby">
+        <div class="step">First baby checkup within 48 hours of discharge (age 3–5 days).</div>
+        <div class="gap">Same tired mom must spot baby danger signs too.</div>
+        <div class="new">Same call asks: feeds, wet diapers, fever, yellow skin, sleep position.</div>
+      </div>
+      <div class="cell l-baby"><div class="step">Well-baby visits. Mom screened for depression at 1, 2, 4, 6 months (AAP). Mississippi Medicaid pays for it.</div></div>
+      <div class="cell l-baby"><div class="step">Infant deaths: birth defects, preterm, low birth weight, SIDS lead. Black babies 15.2 vs white 5.8 per 1,000.</div></div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="days-h">
+  <h2 id="days-h">The first 10 days at home</h2>
+  <div class="days" aria-label="Days after birth">
+    <div>Birth</div><div>Day 1</div><div>Day 2</div><div class="hot">Day 3</div><div class="hot">Day 4</div><div class="hot">Day 5</div><div class="hot">Day 6</div><div class="vis">Day 7</div><div class="vis">Day 8</div><div class="vis">Day 9</div><div class="vis">Day 10</div>
+  </div>
+  <div class="daynotes">
+    <p><b style="color:var(--ink)">Days 2–4:</b> most moms go home. Blood pressure has usually dropped in the first 48 hours.</p>
+    <p><b style="color:var(--danger)">Days 3–6:</b> blood pressure rises again. In one study, the first severe reading came at a median of day 6.</p>
+    <p><b style="color:var(--ok)">Days 7–10:</b> the standard blood pressure check for non-severe moms. Severe or on medicine: within 72 hours. AIM bundle: within 3 days.</p>
+  </div>
+</section>
+
+<section aria-labelledby="rules-h">
+  <h2 id="rules-h">The rules a nurse uses today</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Mom's blood pressure at home</h3>
+      <div class="tier"><span class="pill p-ok">Target</span><span>Under 150/100 (SMFM home monitoring target).</span></div>
+      <div class="tier"><span class="pill p-now">Call now</span><span>140–159 top or 90–109 bottom WITH headache, vision changes, or upper belly pain (MS toolkit).</span></div>
+      <div class="tier"><span class="pill p-er">Urgent</span><span>160 or higher top, or 110 or higher bottom. Notify right away. Severe range needs treatment within 30–60 minutes.</span></div>
+      <p class="src">Sources: <a href="https://s3.amazonaws.com/cdn.smfm.org/attachments/818/b8d458a5f777f5295a37dc7adf4a72c0.pdf">SMFM checklist</a>, <a href="https://www.mspqc.org/wp-content/uploads/2026/06/Hypertension-Initiative_Toolkit.pdf">MSPQC toolkit</a>, <a href="https://www.acog.org/clinical/guidance/practice-bulletin/2020/06/gestational-hypertension-and-preeclampsia">ACOG PB 222</a></p>
+    </div>
+    <div class="card">
+      <h3>Mom's warning signs (POST-BIRTH)</h3>
+      <div class="tier"><span class="pill p-911">Call 911</span><span>Chest pain. Trouble breathing. Seizure. Thoughts of hurting herself or someone else.</span></div>
+      <div class="tier"><span class="pill p-now">Call provider</span><span>Soaking 1 pad an hour or egg-size clots. Wound not healing. Red, swollen, warm leg. Temp 100.4°F+ or 96.8°F or lower. Headache that won't go away, or with vision changes.</span></div>
+      <p class="src">Source: <a href="https://pbws.s3.us-east-1.amazonaws.com/PBWSSaveYourLifeHandout_English.pdf">AWHONN POST-BIRTH handout (2023)</a></p>
+    </div>
+    <div class="card">
+      <h3>Baby's warning signs</h3>
+      <div class="tier"><span class="pill p-911">Call 911</span><span>Can't wake up. Not moving or very weak.</span></div>
+      <div class="tier"><span class="pill p-er">ER now</span><span>Feeding poorly (weak suck). Hard to wake.</span></div>
+      <div class="tier"><span class="pill p-now">Call now</span><span>Any fever 100.4°F+. Temp under 96.8°F. No pee in 8+ hours. Yellow skin in first 24 hours, deep yellow, or spreading to legs.</span></div>
+      <div class="tier"><span class="pill p-24">Within 24h</span><span>Fewer than 6 wet diapers a day (after day 5). Yellow eyes or belly. Not seen by day 4.</span></div>
+      <p class="src">Source: <a href="https://www.healthychildren.org/English/tips-tools/symptom-checker/Pages/symptomviewer.aspx?symptom=Jaundiced+Newborn">AAP symptom checker</a>, <a href="https://www.healthychildren.org/English/health-issues/conditions/fever/Pages/When-to-Call-the-Pediatrician.aspx">AAP fever</a></p>
+    </div>
+    <div class="card">
+      <h3>Normal baby numbers</h3>
+      <ul class="plain">
+        <li>Feeds 8–12 times every 24 hours.</li>
+        <li>Days 1–2: 1–2 black, tarry poops a day.</li>
+        <li>Days 3–4: 2+ green to yellow poops a day.</li>
+        <li>Days 5–7: 6+ wet diapers, 3–4+ yellow poops a day.</li>
+        <li>Loses no more than 8–10% of birth weight.</li>
+        <li>Sleeps on back, alone, in a crib or bassinet. Bed-sharing raises sleep death risk 5–10 times under 4 months.</li>
+      </ul>
+      <p class="src">Source: <a href="https://www.healthychildren.org/English/ages-stages/baby/breastfeeding/Pages/How-to-Tell-if-Baby-is-Getting-Enough-Milk.aspx">AAP</a>, <a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/a-parents-guide-to-safe-sleep.aspx">AAP safe sleep</a></p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="script-h">
+  <h2 id="script-h">The standard follow-up call, as nurses do it now</h2>
+  <p class="lede">Hospitals that make the call use a script like this. A nurse makes it once, 48–72 hours after discharge. CareBridge asks the same questions every day, by voice.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>About mom</h3>
+      <ol class="script">
+        <li>Pain: where, how bad, is the medicine working?</li>
+        <li>Bleeding: pads per day, clots, bad smell, fever?</li>
+        <li>Blood pressure: checked since leaving? Taking the medicine? Headache, swelling, blurry vision, chest pain?</li>
+        <li>Diabetes: still checking sugar if needed?</li>
+        <li>Peeing, bowels, appetite, drinking water.</li>
+        <li>Mood: sad, no interest in things? If yes, Edinburgh depression questions, then doctor or ER.</li>
+        <li>Medicines and prenatal vitamins.</li>
+        <li>Appointment booked?</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>About baby</h3>
+      <ol class="script">
+        <li>How is the baby doing?</li>
+        <li>Breast or bottle? How many feeds a day?</li>
+        <li>How many wet and dirty diapers?</li>
+        <li>Skin: yellow at all? Rash?</li>
+        <li>Cord fallen off yet? Circumcision healing?</li>
+        <li>Sleep: on the back, no pillows or soft toys?</li>
+        <li>Baby's doctor visit booked?</li>
+      </ol>
+      <p class="src">Source: <a href="https://wiperinatal.org/wp-content/uploads/2022/10/DischargePhoneScript.pdf">Wisconsin Association for Perinatal Care script</a>. Also: <a href="https://doh.wa.gov/sites/default/files/2026-10/141-004-PostpartumFollowupCareSchedule.pdf">Washington DOH</a>, <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7901253/">Mount Sinai study</a>. Mississippi's own call script is in the MSPQC toolkit; we have not read it yet.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="money-h">
+  <h2 id="money-h">Who pays, and what we still don't know</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Money facts</h3>
+      <ul class="plain">
+        <li>Mississippi Medicaid covers moms for 12 months after birth (law signed March 2023).</li>
+        <li>Mississippi Medicaid pays for remote monitoring, but only for long-term illness AND 2+ hospital or ER visits in the past year. Most new moms would NOT qualify under that rule.</li>
+        <li>Billing codes for remote monitoring exist: 99453, 99454, 99457, 99458.</li>
+        <li>Mississippi's $206M rural health plan funds "post-discharge care coordination" and "24/7 nurse navigation."</li>
+        <li>Blue Cross Blue Shield of Mississippi tracks hospitals on these safety bundles.</li>
+      </ul>
+      <p class="src">Sources: <a href="https://www.law.cornell.edu/regulations/mississippi/23-Miss-Code-R-SS-225-2-3">MS Medicaid rule</a>, <a href="https://telehealth.hhs.gov/providers/best-practice-guides/telehealth-and-remote-patient-monitoring/billing-remote-patient">HHS billing guide</a>, <a href="https://mississippirhtp.com/wp-content/uploads/2026/06/ada_MSRHTP-Roadshow-PPT.pdf">MS RHTP</a></p>
+    </div>
+    <div class="card">
+      <h3>Still to check</h3>
+      <ul class="plain">
+        <li>Ask a real labor-and-delivery nurse: does her hospital make the follow-up call? Who does it? How often do they reach moms?</li>
+        <li>Read Mississippi's own discharge call script (MSPQC toolkit).</li>
+        <li>Ask Mississippi Medicaid if the August 2026 rule changed who qualifies for remote monitoring.</li>
+        <li>Find which Mississippi hospitals give moms a home cuff.</li>
+        <li>Timing differs by source: AIM says 3 days, SMFM says 72 hours or 7–10 days, MS toolkit says nurse visit at 3–5 days. Use the strictest.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="callout">ACOG Committee Opinion 767 (treat severe blood pressure in 30–60 minutes) was withdrawn. Cite ACOG Practice Bulletin 222 instead, which has the same rule.</p>
+</section>
+
+<section aria-labelledby="src-h">
+  <h2 id="src-h">Sources</h2>
+  <ul class="sources">
+    <li><a href="https://msdcoe.org/wp-content/uploads/2026/04/Mississippi-Maternal-Mortality-Review-Committee-Report-2025.pdf">Mississippi Maternal Mortality Review Committee Report 2025</a></li>
+    <li><a href="https://www.acog.org/clinical/guidance/practice-bulletin/2020/06/gestational-hypertension-and-preeclampsia">ACOG Practice Bulletin 222</a></li>
+    <li><a href="https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2018/05/optimizing-postpartum-care">ACOG Committee Opinion 736</a></li>
+    <li><a href="https://saferbirth.org/wp-content/uploads/U1-FINAL_AIM_Bundle_SHP2022.pdf">AIM Severe Hypertension Bundle 2022</a></li>
+    <li><a href="https://s3.amazonaws.com/cdn.smfm.org/attachments/818/b8d458a5f777f5295a37dc7adf4a72c0.pdf">SMFM discharge checklist for hypertensive disorders</a></li>
+    <li><a href="https://pbws.s3.us-east-1.amazonaws.com/PBWSSaveYourLifeHandout_English.pdf">AWHONN POST-BIRTH warning signs</a></li>
+    <li><a href="https://www.mspqc.org/wp-content/uploads/2026/06/Hypertension-Initiative_Toolkit.pdf">MSPQC Maternal Hypertension &amp; Heart Toolkit</a></li>
+    <li><a href="https://www.mspqc.org/wp-content/uploads/2025/10/MSPQC-Postpartum-Discharge-Transition-Toolkit-final-12.1.23.pdf">MSPQC Postpartum Discharge Transition Toolkit</a></li>
+    <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10428007/">Remote BP monitoring vs standard care</a></li>
+    <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11326966/">Remote postpartum hypertension program outcomes</a></li>
+    <li><a href="https://wiperinatal.org/wp-content/uploads/2022/10/DischargePhoneScript.pdf">Wisconsin postpartum discharge call script</a></li>
+    <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7901253/">Mount Sinai postpartum call study</a></li>
+    <li><a href="https://www.healthychildren.org/English/tips-tools/symptom-checker/Pages/symptomviewer.aspx?symptom=Jaundiced+Newborn">AAP newborn symptom checker</a></li>
+    <li><a href="https://www.kff.org/state-health-policy-data/state-indicator/births-by-source-of-payment-for-delivery/">KFF births by payer</a></li>
+    <li><a href="https://www.marchofdimes.org/peristats/reports/mississippi/report-card">March of Dimes Mississippi report card</a></li>
+    <li><a href="https://mississippitoday.org/2026/08/11/march-of-dimes-mississippi/">Mississippi Today: maternity care deserts</a></li>
+    <li><a href="https://www.thenationshealth.org/content/55/9/9">The Nation's Health: Mississippi infant mortality</a></li>
+    <li><a href="https://www.pewresearch.org/internet/fact-sheet/internet-broadband/">Pew: internet and broadband</a></li>
+    <li><a href="https://www.law.cornell.edu/regulations/mississippi/23-Miss-Code-R-SS-225-2-3">Mississippi Medicaid remote monitoring rule</a></li>
+    <li><a href="https://mississippirhtp.com/wp-content/uploads/2026/06/ada_MSRHTP-Roadshow-PPT.pdf">Mississippi Rural Health Transformation Program</a></li>
+    <li><a href="https://www.umc.edu/news/News_Articles/2025/06/Maternal-Telehealth.html">UMMC maternal telehealth</a></li>
+  </ul>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var map=document.getElementById('map'), a=document.getElementById('v-today'), b=document.getElementById('v-future');
+  function set(v){map.setAttribute('data-view',v);a.setAttribute('aria-pressed',v==='today');b.setAttribute('aria-pressed',v==='future');
+    try{localStorage.setItem('caremap-view',v)}catch(e){}}
+  a.addEventListener('click',function(){set('today')});
+  b.addEventListener('click',function(){set('future')});
+  try{var s=localStorage.getItem('caremap-view'); if(s==='future') set('future');}catch(e){}
+})();
+</script>

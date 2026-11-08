@@ -1,0 +1,152 @@
+<title>CareBridge Build Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: engineering one-pager. Flow diagram first, then the parts, the data, the build order, the demo script. */
+:root{
+  --bg:#f5f7f8; --panel:#ffffff; --ink:#14212b; --muted:#566673; --line:#d9e1e6;
+  --accent:#0f6e74; --accent-soft:#e2f1f1;
+  --danger:#b4232c; --danger-soft:#fbe7e8; --warn:#9a5b00; --warn-soft:#fdf1dc; --ok:#2f7a3d; --ok-soft:#e5f3e7;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-head:"Source Serif 4",Georgia,serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f171d; --panel:#16212a; --ink:#e6edf1; --muted:#9aabb7; --line:#2a3943;
+  --accent:#5cc2c7; --accent-soft:#163538;
+  --danger:#f0727a; --danger-soft:#3a1c20; --warn:#e8b158; --warn-soft:#3a2c14; --ok:#7fcb8c; --ok-soft:#1b3322; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f171d; --panel:#16212a; --ink:#e6edf1; --muted:#9aabb7; --line:#2a3943;
+  --accent:#5cc2c7; --accent-soft:#163538;
+  --danger:#f0727a; --danger-soft:#3a1c20; --warn:#e8b158; --warn-soft:#3a2c14; --ok:#7fcb8c; --ok-soft:#1b3322; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 60px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2{font-family:var(--f-head);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:clamp(28px,4vw,40px)} h2{font-size:24px} h3{margin:0;font-size:15px}
+p{margin:0}
+.lede{max-width:68ch;color:var(--muted);font-size:17px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+header,section{display:flex;flex-direction:column;gap:14px}
+/* flow diagram */
+.flowbox{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px}
+.flow{display:grid;grid-template-columns:repeat(5,minmax(170px,1fr));gap:14px 26px;min-width:960px;align-items:stretch}
+.node{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:4px;position:relative;background:var(--bg)}
+.node b{font-size:14px}
+.node span{font-size:13px;color:var(--muted)}
+.node code{font:500 11px var(--f-mono);color:var(--accent)}
+.node.rule{border-color:var(--danger);background:var(--danger-soft)}
+.node.core{border-color:var(--accent);background:var(--accent-soft)}
+.node.out{border-color:var(--ok);background:var(--ok-soft)}
+.arrow::after{content:"→";position:absolute;right:-21px;top:50%;transform:translateY(-50%);font:700 16px var(--f-mono);color:var(--muted)}
+.colhead{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.loop{grid-column:1/-1;border:1px dashed var(--warn);border-radius:8px;padding:10px 12px;font-size:13px;background:var(--warn-soft)}
+/* cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+ul,ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.tag{font:600 11px var(--f-mono);letter-spacing:.04em;padding:3px 8px;border-radius:999px;align-self:flex-start;text-transform:uppercase}
+.t-must{background:var(--danger);color:var(--panel)}
+.t-should{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+.t-nice{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
+.tablebox{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px var(--f-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+td code{font:500 12px var(--f-mono);color:var(--accent)}
+.demo{counter-reset:s;display:flex;flex-direction:column;gap:10px}
+.demo div{display:grid;grid-template-columns:70px 1fr;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:14px}
+.demo b{font:600 13px var(--f-mono);color:var(--accent);font-variant-numeric:tabular-nums}
+.say{font-style:italic;color:var(--muted)}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">USM Hatchathon 2026 · What we are building</span>
+  <h1>CareBridge, end to end</h1>
+  <p class="lede">Discharge papers go in. A daily voice check goes out. Danger goes to the nurse. Everything lands in one record that the nurse, the doctor and the mom can all see.</p>
+</header>
+
+<section aria-labelledby="flow-h">
+  <h2 id="flow-h">How the pieces connect</h2>
+  <div class="flowbox" tabindex="0" aria-label="System flow, scrolls sideways">
+    <div class="flow">
+      <span class="colhead">1 · In</span><span class="colhead">2 · Plan</span><span class="colhead">3 · Check in</span><span class="colhead">4 · Decide</span><span class="colhead">5 · Show</span>
+
+      <div class="node arrow"><b>Discharge papers</b><span>Diagnosis, blood pressure history, medicines, doctor's orders, baby info. Upload a PDF or type it in.</span><code>AI reads the paper</code></div>
+      <div class="node core arrow"><b>Her care plan</b><span>Her danger numbers, her questions, her call times (daily for 10 days). Built from the hospital's rules, or the standard ones.</span><code>rules file per hospital</code></div>
+      <div class="node core arrow"><b>Daily voice call</b><span>Calls any phone. Asks her number and symptoms, then the baby questions. Smartphone moms also get a text link.</span><code>phone service + speech to text</code></div>
+      <div class="node rule arrow"><b>Danger check</b><span>Fixed rules, never AI guessing. Green, yellow, or red for mom and for baby. Also checks the trend over days.</span><code>plain code, tested</code></div>
+      <div class="node out"><b>Nurse screen</b><span>Every mom sorted by color. Red at the top with a short summary and a "mark handled" button.</span></div>
+
+      <div class="node"><b>Sample moms</b><span>Fake patients for the demo, made with Synthea (the track's own starter data).</span></div>
+      <div class="node"><b>Hospital rules</b><span>SMFM, AIM, POST-BIRTH and AAP numbers from the care map, as settings.</span></div>
+      <div class="node"><b>AI listener</b><span>Turns "one sixty-six over one twelve, bad headache" into 166/112 + headache. Asks again if unsure.</span></div>
+      <div class="node"><b>One record</b><span>Every call, reading, symptom, alert, and who handled it. Grows every day.</span></div>
+      <div class="node out"><b>Doctor timeline + mom page</b><span>Doctor sees the full story before the visit. Mom sees her own progress by text link.</span></div>
+
+      <div class="loop"><b>Keeps going until someone acts:</b> no answer means it calls again in 1 hour, then texts, then flags the nurse. A red result tells mom what to do right away ("go to the ER now" or "call 911") and keeps the alert open until the nurse marks it handled.</div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="parts-h">
+  <h2 id="parts-h">The danger check, exactly</h2>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Result</th><th>Mom</th><th>Baby</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td><b style="color:var(--danger)">Red · 911</b></td><td>Chest pain, can't breathe, seizure, thoughts of self-harm</td><td>Can't wake up, not moving, very weak</td><td>Tell mom to call 911 now. Nurse alert.</td></tr>
+        <tr><td><b style="color:var(--danger)">Red · urgent</b></td><td>160+ top or 110+ bottom. Or 140–159 / 90–109 with headache, vision change, upper belly pain</td><td>Fever 100.4°F+, feeding poorly, yellow skin spreading, no pee 8+ hours</td><td>Tell mom to go to the ER or call her doctor now. Nurse alert at once.</td></tr>
+        <tr><td><b style="color:var(--warn)">Yellow</b></td><td>150–159 top or 100–109 bottom, no symptoms. Or rising 3 days in a row</td><td>Fewer than 6 wet diapers after day 5, yellow eyes</td><td>Nurse reviews today. Doctor gets the trend.</td></tr>
+        <tr><td><b style="color:var(--ok)">Green</b></td><td>Under 150/100, no symptoms</td><td>Normal feeds and diapers</td><td>Saved to the record. Next call tomorrow.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="lede" style="font-size:14px">Numbers come from the SMFM checklist, the Mississippi toolkit, POST-BIRTH and AAP. The hospital can change them. The nurse makes every medical decision.</p>
+</section>
+
+<section aria-labelledby="data-h">
+  <h2 id="data-h">What we store</h2>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>Thing</th><th>What it holds</th></tr></thead>
+      <tbody>
+        <tr><td><code>mom</code></td><td>Name, phone, birth date of baby, diagnosis, medicines, county, language</td></tr>
+        <tr><td><code>baby</code></td><td>Name, birth date, feeding type, linked to mom</td></tr>
+        <tr><td><code>care_plan</code></td><td>Danger numbers, question list, call schedule, start and end date</td></tr>
+        <tr><td><code>call</code></td><td>When, answered or not, recording text, attempt number</td></tr>
+        <tr><td><code>reading</code></td><td>Top and bottom number, symptoms, baby answers, result color</td></tr>
+        <tr><td><code>alert</code></td><td>Why, color, opened at, handled by, handled at, nurse note</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="order-h">
+  <h2 id="order-h">Build order: stop wherever time runs out</h2>
+  <div class="grid">
+    <div class="card"><span class="tag t-must">Must · demo</span><h3>1. Call, check, alert</h3>
+      <ul><li>Voice call to a real phone</li><li>AI listener pulls out the numbers and symptoms</li><li>Danger check (with tests)</li><li>Nurse screen updates live, red alert pops</li></ul></div>
+    <div class="card"><span class="tag t-must">Must · demo</span><h3>2. Sample data</h3>
+      <ul><li>10–20 fake moms with a week of history</li><li>One mom whose pressure rises day by day</li><li>Mississippi map from CDC PLACES high blood pressure by county</li></ul></div>
+    <div class="card"><span class="tag t-should">Should</span><h3>3. Doctor timeline</h3>
+      <ul><li>Chart of her readings over 10 days</li><li>Symptoms and alerts on the same line</li><li>AI summary: "what to look at"</li></ul></div>
+    <div class="card"><span class="tag t-nice">Nice</span><h3>4. Mom page + paper upload</h3>
+      <ul><li>Text link to her own progress</li><li>Upload a discharge PDF, AI builds the plan</li><li>Retry loop and text fallback</li></ul></div>
+  </div>
+</section>
+
+<section aria-labelledby="demo-h">
+  <h2 id="demo-h">The 3-minute finale</h2>
+  <div class="demo">
+    <div><b>0:00</b><span>The problem: 5,500 Mississippi moms a year have high blood pressure. Pressure spikes on days 3–6 at home. Half miss their check. 82% of deaths were preventable.</span></div>
+    <div><b>0:40</b><span>Show the care map: where it breaks today.</span></div>
+    <div><b>1:00</b><span>Live: a judge's phone rings. <span class="say">"What is your blood pressure today?"</span> Judge: <span class="say">"166 over 112, and a bad headache."</span></span></div>
+    <div><b>1:30</b><span>Nurse screen turns red. Doctor timeline shows the 3-day rise. Mom is told to go to the ER.</span></div>
+    <div><b>2:00</b><span>Why us: works on any phone, no app or internet. Built on the same rules nurses use.</span></div>
+    <div><b>2:30</b><span>Growth: moms first, then every patient leaving a rural hospital. Funded by Mississippi's $206M rural health plan. Nurse quote. Team.</span></div>
+  </div>
+</section>
+</div>
