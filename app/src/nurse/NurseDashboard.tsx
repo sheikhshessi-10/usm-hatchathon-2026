@@ -78,7 +78,7 @@ export default function NurseDashboard() {
           </section>
 
           <Card className="p-5">
-            <h2 className="font-bold text-navy">Continuity of care · synthetic snapshot</h2>
+            <h2 className="font-bold text-navy">Continuity of care · synthetic snapshot</h2><a className="mt-1 inline-block text-sm font-semibold text-navy underline" href="#reports">Open charts, definitions, and exports</a>
             <p className="mt-1 text-xs text-body">Care completion and unresolved workflow gaps. Clinical severity remains separate from workflow acknowledgements.</p>
             <dl className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
               <div><dt>Urgent doctor reviews pending</dt><dd className="text-xl font-bold">{metrics.pendingUrgent}/{metrics.urgent}</dd></div>
