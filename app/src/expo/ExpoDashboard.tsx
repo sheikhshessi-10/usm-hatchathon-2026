@@ -1,39 +1,59 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, CalendarCheck, Check, ChevronDown, HeartPulse, MessageCircle, RotateCcw, ShieldAlert, Stethoscope } from "lucide-react";
-import { replayExample } from "../protocols/examples";
+import { ArrowLeft, ArrowRight, BarChart3, HeartPulse, Lightbulb, PhoneCall, RotateCcw, Stethoscope, TriangleAlert, UserRound } from "lucide-react";
+import { MOMS, status, LEVEL_TEXT } from "../data/moms";
+import { BPChart, Card, Pill } from "../ui/parts";
+import { LiveCall } from "../nurse/LiveCall";
+import { CallKpis } from "../nurse/CallKpis";
 import "./expo.css";
 
+// One patient, start to finish. The whole 2:45 pitch runs on this page, in script order.
+const keisha = MOMS.find((m) => m.id === "m1")!;
+const first = keisha.name.split(" ")[0];
+
 const stages = [
-  { label: "Check in", title: "Aven helps Maya book follow-up", icon: CalendarCheck },
-  { label: "Escalate", title: "Aven stops the routine check-in", icon: ShieldAlert },
-  { label: "Hand off", title: "The clinic picks up the case", icon: Stethoscope },
+  { label: "Problem", time: "0:00", title: "Who checks on her after she goes home?", icon: TriangleAlert },
+  { label: "Solution", time: "0:30", title: "Avenlyth, with Aven, our care companion", icon: UserRound },
+  { label: "Live call", time: "0:55", title: `Aven calls ${first} right now`, icon: PhoneCall },
+  { label: "Handoff", time: "1:20", title: "Her care team sees what she said and why", icon: Stethoscope },
+  { label: "Innovation", time: "1:35", title: "We track what happens after the call", icon: Lightbulb },
+  { label: "Business", time: "2:00", title: "Affordable follow-up at scale", icon: BarChart3 },
+  { label: "Close", time: "2:25", title: "Care doesn't end at discharge.", icon: HeartPulse },
 ] as const;
 
-const appointmentTime = new Intl.DateTimeFormat("en-US", {
-  timeZone: "America/Chicago", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short",
-});
+const PROBLEM: [string, string][] = [
+  ["85.7%", "of pregnancy-related deaths reviewed were preventable (CDC). Gaps in continuity of care were a contributing factor."],
+  ["Days 3–6", "when blood pressure after birth peaks, after she is already home"],
+  ["50–70%", "of moms miss the 7 to 10 day blood pressure check"],
+];
+
+const INNOVATION: [string, string][] = [
+  ["Patient-specific memory", "Every call uses her history: medicines, readings, what she said yesterday."],
+  ["Protocol safety checks", "Danger signs trigger the urgent pathway by fixed rules. The AI never diagnoses."],
+  ["Clinician handoffs", "Urgent cases go to a named person with the full context."],
+  ["Evidence-verified follow-up", "\"I did my test\" doesn't close her case. Closing needs evidence and a clinician."],
+];
+
+const BUSINESS: [string, string][] = [
+  ["~$7,700", "average pregnancy-related readmission (AHRQ, 2020)"],
+  ["$20", "per enrolled patient per month, hospital subscription"],
+  ["$2–5", "estimated automated communication cost per patient per month"],
+];
+
+function Stat({ n, t }: { n: string; t: string }) {
+  return <Card className="p-5"><div className="text-3xl font-extrabold text-navy">{n}</div><p className="mt-1 text-sm text-body">{t}</p></Card>;
+}
 
 export default function ExpoDashboard() {
   const [step, setStep] = useState(0);
-  const [acknowledged, setAcknowledged] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const stage = stages[step];
   const Icon = stage.icon;
-  const routine = step === 0;
-  const handoff = step === 2;
-  const { patient, messages, episode } = replayExample("app", routine ? "routine" : "urgent", acknowledged);
-  const task = episode.tasks[0];
-  const accepted = task?.state === "accepted";
-  const excerpt = routine ? [messages[0], ...messages.slice(8, 11)] : messages.slice(-2);
+  const s = status(keisha);
+  const last = stages.length - 1;
 
   function goTo(next: number) {
     setStep(next);
     requestAnimationFrame(() => heading.current?.focus({ preventScroll: true }));
-  }
-
-  function restart() {
-    setAcknowledged(false);
-    goTo(0);
   }
 
   return (
@@ -43,9 +63,9 @@ export default function ExpoDashboard() {
           <div>
             <p className="expo-kicker"><HeartPulse size={16} aria-hidden="true" /> AVENLYTH · Hatchathon Expo</p>
             <h1>What happens after discharge?</h1>
-            <p className="expo-intro">Follow Maya from a check-in with Aven to a clinic handoff.</p>
+            <p className="expo-intro">Follow {keisha.name} from discharge to a live AI check-in call to her care team.</p>
           </div>
-          <span className="expo-badge">Fictional patient · Simulated care</span>
+          <span className="expo-badge">Fictional patient · Real AI phone call</span>
         </header>
 
         <nav aria-label="Demo steps" className="expo-steps">
@@ -58,74 +78,92 @@ export default function ExpoDashboard() {
 
         <section aria-labelledby="expo-stage" className="expo-stage">
           <header className="expo-stage-header">
-            <span className="expo-stage-icon" data-urgent={!routine}><Icon size={21} aria-hidden="true" /></span>
+            <span className="expo-stage-icon" data-urgent={step === 2 || step === 3}><Icon size={21} aria-hidden="true" /></span>
             <div>
-              <p className="expo-eyebrow">Step {step + 1} of {stages.length} · {patient.name}</p>
+              <p className="expo-eyebrow">Step {step + 1} of {stages.length} · {stage.time} · {keisha.name}</p>
               <h2 ref={heading} tabIndex={-1} id="expo-stage">{stage.title}</h2>
             </div>
-            <button type="button" className="expo-restart" onClick={restart}><RotateCcw size={16} aria-hidden="true" /> <span>Restart demo</span></button>
+            <button type="button" className="expo-restart" onClick={() => goTo(0)}><RotateCcw size={16} aria-hidden="true" /> <span>Restart demo</span></button>
           </header>
 
-          <div className="expo-stage-grid">
-            <div className="expo-outcome" data-urgent={!routine}>
-              <p className="expo-eyebrow">{routine ? "What changed" : handoff ? "Staff worklist" : "Emergency guidance"}</p>
-              <h3>{routine ? "Appointment scheduled" : handoff ? "Urgent clinic review" : "Call 911 now"}</h3>
-              <div className="expo-actions">
-                {handoff ? (
-                  <button type="button" className="expo-primary" aria-disabled={accepted} onClick={() => { if (!accepted) setAcknowledged(true); }}>
-                    {accepted ? "Acknowledgement recorded" : "Simulate staff acknowledgement"}
-                    {accepted && <Check size={17} aria-hidden="true" />}
-                  </button>
-                ) : (
-                  <button type="button" className="expo-primary" onClick={() => goTo(step + 1)}>
-                    {routine ? "Show escalation" : "Show clinic handoff"} <ArrowRight size={17} aria-hidden="true" />
-                  </button>
-                )}
-                {step > 0 && <button type="button" className="expo-back" onClick={() => goTo(step - 1)}><ArrowLeft size={16} aria-hidden="true" /> Back</button>}
+          <div className="flex flex-col gap-4">
+            {step === 0 && (
+              <div className="grid gap-3 sm:grid-cols-3">
+                {PROBLEM.map(([n, t]) => <Stat key={n} n={n} t={t} />)}
+                <p className="text-sm text-body sm:col-span-3">She goes home with medicine to take, symptoms to watch, and a follow-up to attend. Between discharge and that visit, nobody is reliably checking on her.</p>
               </div>
+            )}
 
-              {routine ? (
-                <>
-                  {episode.scheduledAt && <p className="expo-detail"><time dateTime={episode.scheduledAt}>{appointmentTime.format(new Date(episode.scheduledAt))}</time></p>}
-                  <p>Maya picks a time she can get a ride. The appointment is on her care plan, and attendance is pending.</p>
-                </>
-              ) : handoff ? (
-                <>
-                  <p>Staff get Maya’s exact words and the context for the handoff. The case stays open after acknowledgement.</p>
-                  <p role="status" className="expo-detail">{accepted && <Check size={17} aria-hidden="true" />}{accepted ? "Staff acknowledged · case open" : "Urgent review queued · awaiting staff"}</p>
-                </>
-              ) : (
-                <p>Aven stops asking routine questions and tells Maya to call 911. A clinic review is queued in parallel.</p>
-              )}
-              {!routine && <p className="expo-simulation">Simulation only. No call or clinic alert is sent.</p>}
+            {step === 1 && (
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card className="p-5">
+                  <p className="expo-eyebrow">Aven reaches out, by phone or text</p>
+                  <p className="mt-2 text-lg font-semibold">"Hey {first}, just checking in! Did you take your blood pressure medicine today? And how is that headache?"</p>
+                  <p className="mt-3 text-sm text-body">No app, no portal login. Works on a flip phone. Aven uses her record to make every call personal.</p>
+                </Card>
+                <Card className="p-5">
+                  <div className="flex flex-wrap items-center gap-2"><h3 className="text-lg font-extrabold">{keisha.name}, {keisha.age}</h3><Pill level={s.level}>{LEVEL_TEXT[s.level]}</Pill></div>
+                  <p className="text-sm text-body">{keisha.diagnosis} · {keisha.delivery} · day {keisha.dayToday} at home · {keisha.county} County · {keisha.phoneType}</p>
+                  <BPChart calls={keisha.calls} height={180} />
+                </Card>
+              </div>
+            )}
 
-            </div>
+            {step === 2 && (
+              <>
+                <p className="text-sm text-body">Load {first}'s file, press the gold button, and the AI calls the demo phone. Answer as {first}: "166 over 112, and I have a bad headache." The conversation and the rules result appear here live.</p>
+                <LiveCall mom={keisha} />
+              </>
+            )}
 
-            <div className="expo-transcript">
-              <h3><MessageCircle size={16} aria-hidden="true" /> {handoff ? "Conversation attached to review" : "Conversation excerpt"}</h3>
-              <ol>
-                {excerpt.map(message => (
-                  <li key={message.at} data-speaker={message.who}>
-                    <strong>{message.who === "patient" ? "Maya" : "Aven"}</strong>
-                    <p>{message.text}</p>
-                  </li>
-                ))}
-              </ol>
+            {step === 3 && (
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card className="p-5">
+                  <p className="expo-eyebrow">Nurse worklist</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2"><h3 className="text-lg font-extrabold">{keisha.name}</h3><Pill level={s.level}>{LEVEL_TEXT[s.level]}</Pill></div>
+                  <ul className="mt-2 list-disc pl-5 text-sm">{s.findings.map((f, i) => <li key={i}>{f.who === "baby" ? "Baby: " : ""}{f.reason}</li>)}</ul>
+                  <p className="mt-3 text-sm text-body">Aven stops the routine check-in and escalates to the nurse. Fixed medical rules (SMFM, Mississippi toolkit, POST-BIRTH, AAP) decide urgency, not the AI.</p>
+                  <a href="#nurse/m1" className="mt-3 inline-block text-sm font-bold text-navy underline">Open {first} in the nurse screen</a>
+                </Card>
+                <Card className="p-5">
+                  <p className="expo-eyebrow">Doctor</p>
+                  <h3 className="text-lg font-extrabold">One record for the whole team</h3>
+                  <p className="mt-2 text-sm text-body">The doctor sees her exact words, the trend, the reason for escalation, and what still needs human review.</p>
+                  <a href="#doctor/m1" className="mt-3 inline-block text-sm font-bold text-navy underline">Open {first} in the doctor screen</a>
+                  <a href="#mom" className="mt-2 block text-sm font-bold text-navy underline">See {first}'s own page</a>
+                </Card>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {INNOVATION.map(([h, t]) => <Card key={h} className="p-5"><h3 className="font-bold">{h}</h3><p className="mt-1 text-sm text-body">{t}</p></Card>)}
+                <p className="text-sm text-body sm:col-span-2">Built and tested: 15 synthetic maternal journeys, care-loop scenarios, and live AI phone calls. Next: hospital record integration. <a href="#episodes" className="font-bold text-navy underline">Try the care loops</a> · <a href="#protocols" className="font-bold text-navy underline">Call, text and chat examples</a></p>
+              </div>
+            )}
+
+            {step === 5 && (
+              <>
+                <div className="grid gap-3 sm:grid-cols-3">{BUSINESS.map(([n, t]) => <Stat key={n} n={n} t={t} />)}</div>
+                <CallKpis />
+                <a href="#reports" className="text-sm font-bold text-navy underline">Open full reports</a>
+              </>
+            )}
+
+            {step === 6 && (
+              <Card className="p-6">
+                <p className="text-lg">Next: a clinician-supervised pilot, starting with postpartum care. Then chronic disease, surgical recovery, and anyone who needs support between visits.</p>
+                <p className="mt-4 text-2xl font-extrabold text-navy">We're not replacing doctors. We're making sure patients don't disappear between appointments.</p>
+                <p className="mt-4 text-3xl font-extrabold">Avenlyth. Care doesn't end at discharge.</p>
+              </Card>
+            )}
+
+            <div className="expo-actions">
+              {step < last && <button type="button" className="expo-primary" onClick={() => goTo(step + 1)}>Next: {stages[step + 1].label} <ArrowRight size={17} aria-hidden="true" /></button>}
+              {step > 0 && <button type="button" className="expo-back" onClick={() => goTo(step - 1)}><ArrowLeft size={16} aria-hidden="true" /> Back</button>}
             </div>
           </div>
         </section>
-
-        <div className="expo-footer">
-          <nav aria-label="Explore AVENLYTH">
-            <a href="#protocols">Full call, text &amp; chat examples</a>
-            <a href="#episodes">Interactive Care Loops</a>
-            <a href="#reports">Demo reporting</a>
-          </nav>
-          <details>
-            <summary>Booth talking points <ChevronDown size={16} aria-hidden="true" /></summary>
-            <p>After discharge, the clinic needs to know who made it back to care and who still needs help. Aven checks in by phone, text, or the portal. Here, Maya picks a time she can get a ride. When she reports an emergency, Aven stops the check-in and the clinic receives her exact words in the demo handoff.</p>
-          </details>
-        </div>
       </div>
     </main>
   );
