@@ -4,8 +4,7 @@
   --patient-accent: #853455;
   --patient-border: #eedfe8;
   color: var(--patient-ink);
-  background: radial-gradient(ellipse at 12% 5%, #ffeaf0 0%, transparent 46%),
-    radial-gradient(ellipse at 94% 38%, #eee6ff 0%, transparent 45%), #fffbfd;
+  background: #f9f7f8;
   min-height: 100vh;
   padding: 1.5rem 1.1rem 3rem;
 }
@@ -32,27 +31,21 @@
 .patient-hero {
   position: relative; isolation: isolate; overflow: hidden;
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  min-height: 13rem; padding: clamp(1.15rem, 4vw, 2.6rem);
-  border: 1px solid #f1d6e7; border-radius: 2rem;
-  background: linear-gradient(115deg, #ffdee8 10%, #f9ddf3 63%, #eadfff 100%);
+  min-height: 10rem; padding: clamp(1.15rem, 4vw, 2rem);
+  border: 1px solid #eedfe8; border-radius: 1.2rem;
+  background: #fff;
 }
-.patient-hero::before, .patient-hero::after {
-  position: absolute; z-index: -1; content: ""; pointer-events: none;
-  width: 19rem; height: 19rem; right: -2rem; top: -7rem;
-  border: 1px solid #ffffffab; border-radius: 50%;
-}
-.patient-hero::after { right: -5rem; top: -9rem; width: 26rem; height: 26rem; }
 .patient-hero-copy { min-width: 0; }
 .patient-hero h1 {
-  font-size: clamp(2rem, 6vw, 4.45rem); line-height: 1.02;
-  font-weight: 800; letter-spacing: -.065em; margin-block: .5rem .65rem;
+  font-size: clamp(2rem, 5vw, 3rem); line-height: 1.02;
+  font-weight: 800; letter-spacing: -.04em; margin-block: .5rem .65rem;
 }
 .patient-hero-copy > p:last-child { color: #57354d; max-width: 26rem; font-size: clamp(.9rem, 2vw, 1.08rem); }
 
 .patient-orbit {
   position: relative; flex: 0 0 auto; display: grid; place-items: center;
   width: clamp(6rem, 20vw, 10rem); aspect-ratio: 1; border-radius: 50%;
-  background: #ffffff9c; box-shadow: 0 10px 22px #a56e9e28;
+  background: #faf4f7;
 }
 .patient-orbit svg:first-child { position: absolute; inset: 0; width: 100%; transform: rotate(-90deg); }
 .patient-orbit circle { fill: none; stroke-width: 6; }
@@ -61,7 +54,6 @@
 .patient-orbit > div { display: grid; justify-items: center; gap: .12rem; line-height: 1; }
 .patient-orbit span, .patient-orbit small { font-size: .69rem; font-weight: 800; color: #754161; }
 .patient-orbit strong { font-size: clamp(1.8rem, 5vw, 3.15rem); letter-spacing: -.07em; }
-.patient-orbit-spark { position: absolute; right: -.35rem; top: .2rem; color: #96436b; }
 
 .patient-nav {
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .25rem;
@@ -90,7 +82,7 @@
 .patient-grid[hidden] { display: none; }
 .patient-card {
   min-width: 0; padding: clamp(1rem, 3vw, 1.65rem); background: #fff;
-  border: 1px solid var(--patient-border); border-radius: 1.55rem;
+  border: 1px solid var(--patient-border); border-radius: 1rem;
   box-shadow: 0 9px 26px #54325008;
 }
 .patient-kicker {
@@ -126,7 +118,7 @@
 .patient-saved { align-items: center; margin-top: 1rem; padding: .75rem; background: #f4faf6; border-radius: 1rem; }
 .patient-saved .patient-link { margin-left: auto; }
 .patient-saved p, .patient-next-action p, .patient-list p { font-size: .84rem; color: var(--patient-muted); margin-top: .12rem; }
-.patient-next { background: linear-gradient(140deg, #fff 25%, #f8f1ff 100%); }
+.patient-next { background: #fff; }
 .patient-next-action { margin-top: 1rem; }
 .patient-visit { display: grid; gap: .12rem; margin-top: .8rem; padding-top: .75rem; border-top: 1px solid var(--patient-border); font-size: .88rem; }
 .patient-link {
@@ -158,7 +150,7 @@
 @media (max-width: 640px) {
   .patient-grid { grid-template-columns: minmax(0, 1fr); }
   .patient-nav button { flex-direction: column; gap: .22rem; font-size: .73rem; padding: .3rem .1rem; min-height: 3.2rem; }
-  .patient-hero { min-height: 11rem; }
+  .patient-hero { min-height: 9rem; }
 }
 @media (max-width: 380px) {
   .patient-portal { padding-inline: .8rem; }
