@@ -3,10 +3,12 @@ import {
   useContext,
   useEffect,
   useState,
+  useMemo,
   type ReactNode,
 } from "react";
 import {
   applyEvent,
+  eventValidationError,
   seedEpisodes,
   type Actor,
   type Command,
@@ -18,22 +20,15 @@ function restore(): { events: Event[]; warning: boolean } {
   try {
     const raw =
       typeof localStorage === "undefined" ? null : localStorage.getItem(KEY);
-    if (!raw) return { events: [], warning: false };
+    if (raw === null) return { events: [], warning: false };
     const x = JSON.parse(raw);
     if (x.version !== 1 || !Array.isArray(x.events))
       throw Error("Unsupported episode record");
-    let state = seedEpisodes();
+    const ids = new Set<string>();
     for (const event of x.events) {
-      if (
-        !event ||
-        !event.actor ||
-        !event.command ||
-        typeof event.command.type !== "string" ||
-        event.protocolVersion !== "demo-1.0" ||
-        !Number.isFinite(Date.parse(event.at))
-      )
+      if (eventValidationError(event) || ids.has(event.id))
         throw Error("Invalid episode event");
-      state = applyEvent(state, event);
+      ids.add(event.id);
     }
     return { events: x.events, warning: false };
   } catch {
@@ -50,7 +45,7 @@ const Context = createContext<ContextValue | null>(null);
 export function EpisodeProvider({ children }: { children: ReactNode }) {
   const [saved, setSaved] = useState(restore);
   const [writeFailed, setWriteFailed] = useState(false);
-  const state = saved.events.reduce(applyEvent, seedEpisodes());
+  const state = useMemo(() => saved.events.reduce(applyEvent, seedEpisodes()), [saved.events]);
   useEffect(() => {
     if (saved.warning) return;
     try {

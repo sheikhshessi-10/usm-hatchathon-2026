@@ -33,6 +33,7 @@ it("separates modeled communication cost from fully loaded cost and verified res
       episodeId,
       actor: { role: "doctor" },
       command,
+      protocolVersion: "demo-1.0",
     });
   };
   for (const [eid, channel] of [

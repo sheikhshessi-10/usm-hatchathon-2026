@@ -49,6 +49,8 @@ export type Episode = {
   id: string;
   patientId: string;
   orderId: string;
+  orderedAt: string;
+  completionKind: "lab_completion";
   protocolId: string;
   protocolVersion: string;
   state: EpisodeState;
@@ -76,7 +78,7 @@ export type Patient = {
 export type Audit = {
   id: string;
   at: string;
-  actor: Role;
+  actor: Role | "unknown";
   patientId: string;
   episodeId: string;
   action: string;
@@ -139,6 +141,7 @@ export const PROTOCOLS = [
 export const FIXTURES = [
   {
     id: "lab-postpartum-final",
+    episodeId: "episode-pp",
     patientId: "demo-pp",
     orderId: "ORDER-PP-001",
     kind: "lab_completion",
@@ -148,6 +151,7 @@ export const FIXTURES = [
   },
   {
     id: "lab-chronic-final",
+    episodeId: "episode-chronic",
     patientId: "demo-chronic",
     orderId: "ORDER-CH-001",
     kind: "lab_completion",
@@ -183,6 +187,7 @@ export function seedEpisodes(): State {
         id: "episode-pp",
         patientId: "demo-pp",
         orderId: "ORDER-PP-001",
+        orderedAt: "2026-11-01T12:00:00Z", completionKind: "lab_completion",
         protocolId: "postpartum-screening",
         protocolVersion: "demo-1.0",
         state: "pending",
@@ -193,6 +198,7 @@ export function seedEpisodes(): State {
         id: "episode-chronic",
         patientId: "demo-chronic",
         orderId: "ORDER-CH-001",
+        orderedAt: "2026-11-01T12:00:00Z", completionKind: "lab_completion",
         protocolId: "chronic-lab",
         protocolVersion: "demo-1.0",
         state: "pending",
@@ -248,8 +254,28 @@ export type Event = {
   episodeId: string;
   actor: Actor;
   command: Command;
-  protocolVersion?: string;
+  protocolVersion: string;
 };
+export function eventValidationError(value: unknown): string | null {
+  const object=(x:unknown):x is Record<string,unknown>=>!!x&&typeof x==="object"&&!Array.isArray(x);
+  const text=(x:unknown,max=200)=>typeof x==="string"&&x.trim().length>0&&x.length<=max;
+  if(!object(value)||!text(value.id)||!text(value.episodeId)||!text(value.at)||!Number.isFinite(Date.parse(value.at as string)))return "Invalid event metadata";
+  if(!object(value.actor)||!["patient","coordinator","doctor"].includes(value.actor.role as string)||value.actor.role==="patient"&&!text(value.actor.patientId))return "Invalid actor schema";
+  if(!text(value.protocolVersion)||!PROTOCOLS.some(p=>p.version===value.protocolVersion))return "Unknown protocol version";
+  if(!object(value.command)||!text(value.command.type))return "Invalid command schema";
+  const c=value.command;
+  switch(c.type){
+    case "confirm_identity":case "finish":case "technical_failure":case "patient_reports_completion":case "verify":return null;
+    case "start":case "contact_failed":return ["app","sms","voice"].includes(c.channel as string)?null:"Invalid channel schema";
+    case "say":return text(c.text,1500)?null:"Invalid message schema";
+    case "request_handoff":return text(c.title,300)?null:"Invalid handoff schema";
+    case "accept_handoff":case "complete_admin":return text(c.taskId)?null:"Invalid task schema";
+    case "receive_evidence":return text(c.evidenceId)?null:"Invalid evidence schema";
+    case "schedule":return text(c.at)&&Number.isFinite(Date.parse(c.at as string))?null:"Invalid appointment schema";
+    case "correct_memory":return text(c.memoryId)&&text(c.text,1500)?null:"Invalid memory correction schema";
+    default:return "Unknown action blocked";
+  }
+}
 export function retrieveContext(
   state: State,
   actor: Actor,
@@ -273,9 +299,17 @@ export function retrieveContext(
 }
 export function applyEvent(previous: State, event: Event): State {
   const state: State = structuredClone(previous);
+  const invalid=eventValidationError(event);
+  const rejected=(reason:string)=>{
+    const raw=event as Partial<Event>|null;
+    state.audit.push({id:typeof raw?.id==="string"&&raw.id?raw.id:`rejected-${state.audit.length+1}`,at:typeof raw?.at==="string"?raw.at:"unavailable",actor:raw?.actor&&["patient","coordinator","doctor"].includes(raw.actor.role)?raw.actor.role:"unknown",patientId:"unresolved",episodeId:typeof raw?.episodeId==="string"?raw.episodeId:"unresolved",action:typeof raw?.command?.type==="string"?raw.command.type:"invalid",allowed:false,reason,protocolVersion:typeof raw?.protocolVersion==="string"?raw.protocolVersion:"unresolved"});
+    return state;
+  };
+  if(invalid)return rejected(invalid);
+  if(state.audit.some(a=>a.id===event.id))return previous;
   const episode = state.episodes.find((e) => e.id === event.episodeId);
   const patient = state.patients.find((p) => p.id === episode?.patientId);
-  if (!episode || !patient) return previous;
+  if (!episode || !patient) return rejected("Unknown episode scope; no patient context disclosed");
   const command = event.command;
   const log = (allowed: boolean, reason: string) => {
     state.audit.push({
@@ -291,44 +325,10 @@ export function applyEvent(previous: State, event: Event): State {
     });
     return state;
   };
-  if (
-    !event.id ||
-    !Number.isFinite(Date.parse(event.at)) ||
-    !["patient", "coordinator", "doctor"].includes(event.actor.role)
-  )
-    return log(false, "Invalid event metadata");
-  if (state.audit.some((a) => a.id === event.id)) return previous;
-  if (
-    event.protocolVersion !== undefined &&
-    event.protocolVersion !== episode.protocolVersion
-  )
-    return log(
-      false,
-      "Protocol version mismatch; history must not be reinterpreted",
-    );
-  if (
-    state.audit.length &&
-    Date.parse(event.at) < Date.parse(state.audit[state.audit.length - 1].at)
-  )
+  if(event.protocolVersion!==episode.protocolVersion)return log(false,"Protocol version mismatch; history must not be reinterpreted");
+  const lastApplied = state.audit.filter(a => a.allowed && a.episodeId === episode.id).slice(-1)[0];
+  if (lastApplied && Date.parse(event.at) < Date.parse(lastApplied.at))
     return log(false, "Out-of-order event timestamp");
-  const requiredText: Record<string, string> = {
-    say: "text",
-    request_handoff: "title",
-    accept_handoff: "taskId",
-    complete_admin: "taskId",
-    schedule: "at",
-    receive_evidence: "evidenceId",
-    correct_memory: "text",
-  };
-  const field = requiredText[command.type];
-  if (
-    field &&
-    (typeof (command as unknown as Record<string, unknown>)[field] !==
-      "string" ||
-      String((command as unknown as Record<string, unknown>)[field]).length >
-        1500)
-  )
-    return log(false, "Command schema validation failed");
   if (event.actor.role === "patient" && event.actor.patientId !== patient.id)
     return log(false, "Patient scope mismatch");
   if (command.type === "confirm_identity") {
@@ -380,7 +380,7 @@ export function applyEvent(previous: State, event: Event): State {
       kind,
       state: "requested",
     });
-    if (!["completion_reported", "evidence_received"].includes(episode.state))
+    if (["pending", "contacted", "barrier_identified", "handoff_requested"].includes(episode.state))
       episode.state = "handoff_requested";
   };
   switch (command.type) {
@@ -647,10 +647,10 @@ export function applyEvent(previous: State, event: Event): State {
           false,
           "Staff action and a valid non-past appointment required",
         );
-      if (episode.state === "evidence_received")
+      if (["completion_reported","evidence_received"].includes(episode.state))
         return log(
           false,
-          "Completion evidence is already awaiting verification",
+          "A completion claim or evidence is awaiting reconciliation; do not overwrite it by scheduling",
         );
       episode.scheduledAt = command.at;
       episode.state = "scheduled";
@@ -663,6 +663,8 @@ export function applyEvent(previous: State, event: Event): State {
         !evidence ||
         evidence.patientId !== patient.id ||
         evidence.orderId !== episode.orderId ||
+        evidence.episodeId !== episode.id || evidence.kind !== episode.completionKind ||
+        !Number.isFinite(Date.parse(episode.orderedAt)) || Date.parse(evidence.at)<Date.parse(episode.orderedAt) ||
         evidence.status !== "final" ||
         Date.parse(evidence.at) > Date.parse(event.at)
       )
@@ -691,6 +693,8 @@ export function applyEvent(previous: State, event: Event): State {
         !evidence ||
         evidence.patientId !== patient.id ||
         evidence.orderId !== episode.orderId ||
+        evidence.episodeId !== episode.id || evidence.kind !== episode.completionKind || evidence.status !== "final" ||
+        !Number.isFinite(Date.parse(episode.orderedAt)) || Date.parse(evidence.at)<Date.parse(episode.orderedAt) || Date.parse(evidence.at)>Date.parse(event.at) ||
         !PROTOCOLS.some(
           (p) =>
             p.id === episode.protocolId &&

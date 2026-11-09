@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight, Baby, CheckCircle2, ChevronRight, Phone, PhoneMissed, Search, Sparkles, X,
 } from "lucide-react";
 import { DEMO_AS_OF, status, LEVEL_TEXT, type Mom } from "../data/moms";
 import { LABEL, RANK, type Level } from "../lib/rules";
+import { useDialog } from "../ui/useDialog";
 import { CareAction } from "../ui/CareAction";
 import { BPChart, Card, Pill, Sparkline, levelStyle } from "../ui/parts";
 
@@ -16,7 +17,8 @@ export default function NurseDashboard() {
   const { moms, state, handle } = useCare();
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(()=>{const id=typeof location!=="undefined"?location.hash.split("/")[1]:undefined;return moms.some(m=>m.id===id)?id!:null;});
+  useEffect(()=>{const onHash=()=>{const id=location.hash.startsWith("#nurse/")?location.hash.split("/")[1]:undefined;setOpenId(moms.some(m=>m.id===id)?id!:null);};addEventListener("hashchange",onHash);return()=>removeEventListener("hashchange",onHash);},[]);
 
   const rows = useMemo(() => {
     return moms
@@ -141,7 +143,7 @@ export default function NurseDashboard() {
                       <span className="text-xs text-body">{s.today.time}</span>
                     </div>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber"><PhoneMissed size={15} /> No answer · 3 tries</span>
+                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber"><PhoneMissed size={15} /> No answer · {s.today?.attempts ?? 0} tries</span>
                   )}
                 </div>
                 <div className="col-start-2 md:col-auto flex flex-wrap gap-1.5">
@@ -164,7 +166,7 @@ export default function NurseDashboard() {
       </main>
 
 
-      {open && <Drawer mom={open} onClose={() => setOpenId(null)} onHandled={markHandled} />}
+      {open && <Drawer key={open.id} mom={open} onClose={() => {setOpenId(null);if(location.hash.startsWith("#nurse/"))location.hash="#nurse";}} onHandled={markHandled} />}
     </div>
   );
 }
@@ -189,17 +191,19 @@ function Rail() {
 }
 
 function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; onHandled: (id: string, note: string) => void }) {
+  const dialogRef=useRef<HTMLDivElement>(null);
+  useDialog(dialogRef,onClose);
   const s = status(mom);
   const lvl: Level = s.level;
   const [note, setNote] = useState(mom.nurseNote ?? "");
   const t = s.today;
   const summary = buildSummary(mom);
-  const { state } = useCare();
+  const { state, recoveryRequired } = useCare();
   const doctorReviews = state.reviews.filter(r => r.patientId === mom.id);
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label={`${mom.name} details`}>
-      <button className="absolute inset-0 bg-navy-900/30 backdrop-blur-[2px]" onClick={onClose} aria-label="Close" />
+    <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label={`${mom.name} details`}>
+      <button className="absolute inset-0 bg-navy-900/30 backdrop-blur-[2px]" onClick={onClose} aria-label="Close" tabIndex={-1} />
       <div className="relative flex h-full w-full max-w-[760px] flex-col overflow-y-auto bg-ground shadow-2xl">
         <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#eeeded] bg-white/80 px-6 py-5 backdrop-blur-xl">
           <div className="flex flex-col gap-1.5">
@@ -281,7 +285,7 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
                       {c.transcript && <p className="mt-1 rounded-lg bg-hover px-3 py-2 text-[13px] italic text-ink">"{c.transcript}"</p>}
                     </div>
                   ) : (
-                    <div className="text-sm font-semibold text-amber">No answer after {c.attempts} tries. Text sent.</div>
+                    <div className="text-sm font-semibold text-amber">No answer after {c.attempts} tries. No SMS is sent by this demo.</div>
                   )}
                 </li>
               ))}
@@ -306,13 +310,13 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
             <label htmlFor="note" className="font-bold">Demo nurse note</label>
             <textarea
               id="note" value={note} onChange={(e) => setNote(e.target.value)} rows={3}
-              placeholder="What you did, e.g. spoke with mom, sent to ER, OB increased nifedipine."
+              placeholder="Document contact outcome, action owner, and the next follow-up step." maxLength={3000}
               className="mt-2 w-full rounded-lg border border-line bg-white p-3 text-sm outline-none focus:border-navy/40"
             />
             <div className="mt-3 flex justify-end">
               <button
                 onClick={() => { onHandled(mom.id, note); onClose(); }}
-                disabled={mom.handled}
+                disabled={recoveryRequired || mom.handled || !note.trim()}
                 className="inline-flex items-center gap-2 rounded-lg bg-gold px-5 py-2.5 text-sm font-bold text-navy hover:brightness-95 disabled:opacity-50"
               >
                 <CheckCircle2 size={16} /> {mom.handled ? "Handled" : "Mark handled"}
