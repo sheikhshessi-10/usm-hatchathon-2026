@@ -7,10 +7,10 @@ export const channels = [
     id: "voice",
     title: "Phone call",
     subtitle: "Transcript",
-    opening: "Hey Maya, it’s CareBridge, your automated check-in. Just wanted to see how you’re doing. Got a minute?",
+    opening: "Hey Maya, it’s the CareBridge assistant. Just checking up on you. You got a sec?",
     routine: [
-      "Friday it is. I’ve put you down for 10 in the morning, Central time.",
-      "Thanks for picking up, Maya. Hope you get a little time for yourself today.",
+      "Cool, Friday at 10 a.m. Central it is. I’ve got you down.",
+      "Alright, I’ll let you get back to your day. Take care, Maya.",
     ],
     protocol: [
       "Confirm identity and permission to speak before discussing the care plan.",
@@ -21,10 +21,10 @@ export const channels = [
     id: "sms",
     title: "Text message",
     subtitle: "SMS preview",
-    opening: "Hey, just checking in. How are you holding up today? — CareBridge\n\nReply STOP to opt out.",
+    opening: "Hey! Just checking up on you. How’s today going? — CareBridge\n\nReply STOP to opt out.",
     routine: [
-      "Got it. You’re down for Friday at 10 a.m. Central.",
-      "Hope the rest of your day goes smoothly.",
+      "Yep, you’re down for Friday at 10 a.m. Central.",
+      "Anytime. Hope you get a minute to put your feet up today.",
     ],
     protocol: [
       "Use the consented number and keep reminders generic. Leave sensitive details for the authenticated portal.",
@@ -35,10 +35,10 @@ export const channels = [
     id: "app",
     title: "AI agent",
     subtitle: "Portal chat",
-    opening: "Hey Maya, I’m the CareBridge assistant. Just checking in. How’s your day going?",
+    opening: "Hey Maya! It’s the CareBridge assistant. How’re you doing today?",
     routine: [
-      "I’ve put Friday at 10 a.m. Central on your demo care plan.",
-      "Glad you stopped by, Maya. Take care today.",
+      "Sounds good. I’ve got you down for Friday at 10 a.m. Central.",
+      "You got it, Maya. Take care.",
     ],
     protocol: [
       "Use only the patient’s own context after identity confirmation. Explain the agent’s role and keep questions within the care plan.",
@@ -62,21 +62,21 @@ const patientReply = (text: string): DialogueLine => ({ who: "patient", text });
 const checkIn: Record<Channel, DialogueLine[]> = {
   voice: [
     patientReply("Yeah, I’ve got a minute. I’m just sitting down for the first time today."),
-    assistant("I hear you. Before you get back to things, were you able to take the medicine your doctor prescribed today?"),
+    assistant("I hear you. Hey, did you get a chance to take the meds your doctor prescribed today?"),
     patientReply("Yeah, I took it with breakfast."),
-    assistant("Thanks, I’ll make a note of that. And the pain you mentioned last time, how’s that been today?"),
+    assistant("Gotcha. What about that pain you mentioned last time? How’s it feeling today?"),
   ],
   sms: [
     patientReply("Hey! Hanging in there. It’s been a busy morning."),
-    assistant("I hear you. Did you get a chance to take the medicine your doctor prescribed today?"),
+    assistant("Sounds like a lot. Did you get a chance to take the meds your doctor prescribed?"),
     patientReply("Yep, took it this morning."),
-    assistant("Thanks for letting me know. Any change in the pain since we last checked in?"),
+    assistant("Got it. How’s the pain today? Any better or worse?"),
   ],
   app: [
     patientReply("I’m doing okay. A little tired, but I’ve got a minute."),
-    assistant("Of course. Were you able to take the medicine your doctor prescribed this morning?"),
+    assistant("Yeah, I hear you. Did you manage to take the meds your doctor prescribed this morning?"),
     patientReply("Yes, I took it with breakfast. Thanks for checking."),
-    assistant("Got it. How’s the pain today compared with yesterday?"),
+    assistant("Okay, got it. And that pain from yesterday, how’s it feeling now?"),
   ],
 };
 
@@ -93,9 +93,9 @@ const urgentReplies: Record<Channel, string> = {
 };
 
 const urgentResponse: Record<Channel, string> = {
-  voice: "I’m glad you told me, Maya. Please get medical care immediately. Let’s stop the check-in so you can get help.",
-  sms: "I’m glad you reached out. Please get medical care immediately. Don’t wait for another text.",
-  app: "I’m glad you told me. Please get medical care immediately. Don’t wait for a reply in this chat.",
+  voice: "Maya, I’m glad you told me. Call 911 now. Tell them where you are, that your chest hurts and you’re having trouble breathing, and that you recently gave birth.",
+  sms: "Call 911 now. Tell them where you are, what’s happening, and that you recently gave birth. Don’t wait for a text back.",
+  app: "Maya, I’m glad you told me. Call 911 now. Tell them where you are, what’s happening, and that you recently gave birth. Don’t wait here for a reply.",
 };
 
 const appointment = {
@@ -115,9 +115,9 @@ function sampleDialogue(channel: Channel, scenario: Scenario, reply: string): Di
   }
   return [
     ...opening,
-    assistant(`I’ll note that it’s feeling a little better. Let me see what’s open. Would ${appointment.first} work?`),
+    assistant(`Glad it’s a little better. Let’s see what’s open. Could you do ${appointment.first} work?`),
     patientReply("I can’t make that one. Is there anything Friday morning?"),
-    assistant(`Yes, there’s a spot ${appointment.alternate}. Would that give you enough time to get there?`),
+    assistant(`Yep, there’s a spot ${appointment.alternate}. Think you can get a ride for that one?`),
     patientReply("That works. I can get a ride that morning."),
     assistant(copy.routine[0]),
     patientReply("Perfect, thank you."),
