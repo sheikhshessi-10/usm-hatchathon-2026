@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { PhoneCall, PhoneOff } from "lucide-react";
 import { evaluate, type CheckIn, type MomSymptom } from "../lib/rules";
 import type { Mom } from "../data/moms";
@@ -27,6 +27,18 @@ export function parseTranscript(momLines: string): CallData {
   return { reached: true, sys: bp ? +bp[1] : undefined, dia: bp ? +bp[2] : undefined, symptoms };
 }
 
+export function readCallAnswers(recorded: CallData | null, patientText: string): CallData | null {
+  if (recorded?.reached === false) return null;
+  if (recorded && (
+    (recorded.sys != null && recorded.dia != null) || Array.isArray(recorded.symptoms) ||
+    recorded.babyTempF != null || recorded.babyFeeds != null || recorded.babyWetDiapers != null ||
+    recorded.babyYellow != null || recorded.babyHardToWake != null || recorded.babyCantWake != null ||
+    recorded.babyFeedingPoorly != null
+  )) return recorded;
+  const parsed = parseTranscript(patientText);
+  return (parsed.sys != null && parsed.dia != null) || parsed.symptoms?.length ? parsed : null;
+}
+
 export function toCheckIn(d: CallData, day: number): CheckIn {
   return {
     day, answered: d.reached !== false,
@@ -39,82 +51,102 @@ export function toCheckIn(d: CallData, day: number): CheckIn {
   };
 }
 
+export const NO_ANSWER = /no-answer|busy|voicemail|failed|did-not-answer/i;
+
 const STEP: Record<string, string> = { queued: "Dialing...", ringing: "Ringing...", "in-progress": "On the call now", forwarding: "Transferring", ended: "Call ended" };
 
 export function LiveCall({ mom }: { mom: Mom }) {
   const [callId, setCallId] = useState<string | null>(null);
   const [st, setSt] = useState<Status | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const timer = useRef<number>();
+  const [feedWarning, setFeedWarning] = useState(false);
+  const [pollWarning, setPollWarning] = useState(false);
 
-  // Watch for the newest check-in call to the CareBridge line and follow it live.
   useEffect(() => {
-    const since = Date.now() - 10 * 60 * 1000;
-    let stop = false; let t: number;
-    const look = async () => {
+    let stop = false;
+    let timer: number;
+    async function findCall() {
       try {
-        const r = await fetch("/api/calls");
-        const j = await r.json();
-        const newest = (j.calls ?? []).find((c: { startedAt: string }) => new Date(c.startedAt).getTime() > since);
-        if (!stop && newest) { setCallId((cur) => cur === newest.id ? cur : newest.id); setBusy(true); }
-        if (!r.ok && !stop) setErr(j.error ?? "Live calling is not set up.");
-      } catch { /* try again */ }
-      if (!stop) t = window.setTimeout(look, 4000);
-    };
-    look();
-    return () => { stop = true; window.clearTimeout(t); };
+        const response = await fetch("/api/calls");
+        if (!response.ok) throw new Error("Call feed unavailable");
+        const { calls } = await response.json() as { calls: { id: string; direction: string; startedAt: string }[] };
+        const cutoff = Date.now() - 10 * 60 * 1000;
+        const newest = calls.find(call => call.direction === "inboundPhoneCall" && Date.parse(call.startedAt) > cutoff);
+        if (!stop) {
+          setFeedWarning(false);
+          if (newest) setCallId(newest.id);
+        }
+      } catch {
+        if (!stop) setFeedWarning(true);
+      }
+      if (!stop) timer = window.setTimeout(findCall, 4000);
+    }
+    findCall();
+    return () => { stop = true; window.clearTimeout(timer); };
   }, []);
 
   useEffect(() => {
     if (!callId) return;
     let stop = false;
+    let timer: number;
+    setSt(null);
+    setPollWarning(false);
     const tick = async () => {
       try {
         const r = await fetch(`/api/call-status?id=${callId}`);
+        if (!r.ok) throw new Error("Call status unavailable");
         const j = (await r.json()) as Status;
-        if (!stop && r.ok) setSt(j);
-        // Keep checking until the call ends and the AI has written down the answers.
-        if (!stop && !(j.status === "ended" && (j.data || j.summary || j.endedReason))) timer.current = window.setTimeout(tick, 2500);
-        else setBusy(false);
-      } catch { if (!stop) timer.current = window.setTimeout(tick, 4000); }
+        if (stop) return;
+        setSt(j);
+        setPollWarning(false);
+        if (j.status !== "ended" || !(j.data || j.summary || j.endedReason)) {
+          timer = window.setTimeout(tick, 2500);
+        }
+      } catch {
+        if (stop) return;
+        setPollWarning(true);
+        timer = window.setTimeout(tick, 4000);
+      }
     };
     tick();
-    return () => { stop = true; window.clearTimeout(timer.current); };
+    return () => { stop = true; window.clearTimeout(timer); };
   }, [callId]);
 
   const ended = st?.status === "ended";
-  const data = ended ? (st?.data && (st.data.sys || st.data.symptoms?.length || st.data.reached !== undefined) ? st.data : parseTranscript(st!.messages.filter((m) => m.role === "mom").map((m) => m.text).join(" "))) : null;
+  const unreached = ended && (st.data?.reached === false || NO_ANSWER.test(st.endedReason ?? ""));
+  const spoken = ended ? st.messages.filter(message => message.role === "mom").map(message => message.text).join(" ").trim() : "";
+  const data = ended && !unreached ? readCallAnswers(st.data, spoken) : null;
   const result = data ? evaluate(toCheckIn(data, mom.dayToday)) : null;
-  const first = "Keisha";
-  void mom;
+  const waitingForAnswers = ended && !(st.data || st.summary || st.endedReason);
 
   return (
     <Card className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-bold">Live AI check-in call</h3>
-          <p className="text-sm text-body">Call the CareBridge line from any phone and play the mom. The AI asks the questions. Our fixed rules decide the result. The conversation shows up here live.</p>
+          <h3 className="font-bold">Live demo phone line</h3>
+          <p className="mt-1 text-sm text-body">Call in to play the fictional patient. This panel follows the most recent incoming demo call.</p>
         </div>
-        <a href="tel:+16012305710" className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy">
-          <PhoneCall size={16} /> {busy ? "Call running..." : "Call (601) 230-5710"}
+        <a href="tel:+16012305710" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy">
+          <PhoneCall size={16} aria-hidden="true" /> Call (601) 230-5710
         </a>
       </div>
-
-      {err && <p className="mt-3 rounded-xl bg-red-soft px-4 py-3 text-sm text-red">{err}</p>}
+      {feedWarning && <p role="status" className="mt-3 text-sm text-body">The incoming call feed is temporarily unavailable. Checking again…</p>}
+      {!callId && !feedWarning && <p role="status" className="mt-3 text-sm text-body">Waiting for an incoming demo call.</p>}
 
       {callId && (
         <div className="mt-4 flex flex-col gap-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-navy">
+          <div role="status" className="flex items-center gap-2 text-sm font-semibold text-navy">
             {ended ? <PhoneOff size={15} /> : <span className="h-2 w-2 animate-pulse rounded-full bg-green" />}
-            {STEP[st?.status ?? "queued"] ?? st?.status}
-            {ended && !result && " · writing up answers..."}
+            {st ? STEP[st.status] ?? st.status : "Connecting to call transcript"}
+            {waitingForAnswers && " · waiting for answers"}
           </div>
 
+          {pollWarning && <p role="status" className="text-sm text-body">Call status is temporarily unavailable. Checking again…</p>}
+          {ended && !waitingForAnswers && !result && <p className="text-sm text-body">{unreached ? "No patient was reached on this call." : "The call ended without enough patient responses to show a result."}</p>}
+
           {st && st.messages.length > 0 && (
-            <div className="max-h-64 overflow-y-auto rounded-xl bg-ground p-3 text-sm">
+            <div role="region" aria-label="Live call transcript" tabIndex={0} className="max-h-64 overflow-y-auto rounded-xl bg-ground p-3 text-sm [overflow-wrap:anywhere]">
               {st.messages.map((m, i) => (
-                <p key={i} className="py-1"><b className={m.role === "ai" ? "text-navy" : "text-ink"}>{m.role === "ai" ? "CareBridge: " : `${first}: `}</b>{m.text}</p>
+                <p key={i} className="py-1"><b className={m.role === "ai" ? "text-navy" : "text-ink"}>{m.role === "ai" ? "Aven: " : "Caller: "}</b>{m.text}</p>
               ))}
             </div>
           )}
@@ -131,7 +163,7 @@ export function LiveCall({ mom }: { mom: Mom }) {
               </ul>
               {data.questionsForNurse && <p className="mt-2 text-sm"><b>Question for nurse:</b> {data.questionsForNurse}</p>}
               {st?.summary && <p className="mt-2 text-sm text-body">{st.summary}</p>}
-              {st?.recordingUrl && <audio className="mt-3 w-full" controls src={st.recordingUrl} />}
+              {st?.recordingUrl && <audio className="mt-3 w-full" aria-label="Demo call recording" controls src={st.recordingUrl} />}
             </div>
           )}
         </div>

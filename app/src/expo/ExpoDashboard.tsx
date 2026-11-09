@@ -17,12 +17,12 @@ export default function ExpoDashboard() {
   const routine = step === 0;
   const handoff = step === 2;
   const { patient, messages, episode } = replayExample("app", routine ? "routine" : "urgent", acknowledged);
-  const shown = routine ? [messages[0], ...messages.slice(6, 11)] : messages.slice(-2);
+  const shown = routine ? [messages[0], ...messages.slice(8, 11)] : messages.slice(-2);
   const task = episode.tasks[0];
 
   function goTo(next: number) {
     setStep(next);
-    requestAnimationFrame(() => heading.current?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => heading.current?.focus());
   }
 
   return (

@@ -44,6 +44,24 @@ export default function EpisodesDashboard() {
     dispatch(episode.id, actor, command);
   const current = episode.interactions[episode.interactions.length - 1];
   const closed = episode.state === "verified_closed";
+  const activeInteraction = current?.endpoint === "active";
+  const interactionHint = closed
+    ? "This episode is verified and closed."
+    : activeInteraction
+      ? "End the current conversation before switching channels."
+      : !patient.identityConfirmed
+        ? role === "patient" ? "Switch to a staff demo role to confirm identity." : "Confirm the demo identity above to start."
+        : !patient.consent[channel]
+          ? "This patient has not consented to the selected channel."
+          : "";
+  const awaitingHandoff = episode.tasks.some(task => task.state !== "completed");
+  const verificationHint = closed ? ""
+    : role !== "doctor" ? "Switch to the Doctor demo role to verify."
+    : episode.state !== "evidence_received" ? "Reconcile the matching completion record first."
+    : awaitingHandoff ? "Finish outstanding handoffs before verifying." : "";
+  const scheduleTime = Date.parse(schedule);
+  const canSchedule = Number.isFinite(scheduleTime) && scheduleTime > Date.now() &&
+    !["completion_reported", "evidence_received", "verified_closed"].includes(episode.state);
   const protocol = PROTOCOLS.find((p) => p.id === episode.protocolId)!;
   const context = retrieveContext(state, actor, patient.id, episode.id);
   const k = episodeMetrics(state);
@@ -120,12 +138,12 @@ export default function EpisodesDashboard() {
             {warning}
           </p>
         )}
-        <div className="flex flex-wrap gap-4 rounded-card border border-line bg-white p-4">
+        <div className="grid gap-3 rounded-card border border-line bg-white p-4 sm:grid-cols-2">
           <label className="text-sm font-semibold">
             Scenario
             <select
               aria-label="Scenario"
-              className="ml-2 rounded-lg border border-line p-2"
+              className="mt-1 block min-h-11 w-full rounded-lg border border-line bg-white p-2"
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
             >
@@ -140,7 +158,7 @@ export default function EpisodesDashboard() {
             Demo role
             <select
               aria-label="Demo role"
-              className="ml-2 rounded-lg border border-line p-2"
+              className="mt-1 block min-h-11 w-full rounded-lg border border-line bg-white p-2"
               value={role}
               onChange={(e) => setRole(e.target.value as Role)}
             >
@@ -208,8 +226,9 @@ export default function EpisodesDashboard() {
                   Channel
                   <select
                     aria-label="Channel"
-                    className="ml-2 rounded-lg border border-line p-2"
-                    value={channel}
+                    className="ml-2 min-h-11 rounded-lg border border-line p-2"
+                    value={activeInteraction ? current.channel : channel}
+                    disabled={activeInteraction}
                     onChange={(e) => setChannel(e.target.value as Channel)}
                   >
                     <option value="app">Application</option>
@@ -243,15 +262,17 @@ export default function EpisodesDashboard() {
                   Record unsuccessful contact
                 </button>
               </div>
+              {interactionHint && <p className="mt-3 text-sm text-body">{interactionHint}</p>}
               {current && (
                 <>
-                  <p className="mt-3 rounded-lg bg-ground p-3 text-xs">
+                  <p role="status" className="mt-3 rounded-lg bg-ground p-3 text-xs">
                     <b>Conversation endpoint:</b>{" "}
                     {current.endpoint.split("_").join(" ")}.{" "}
                     <b>Care episode:</b> {episode.state.split("_").join(" ")}.
                   </p>
                   <ol
                     className="mt-3 max-h-[420px] space-y-3 overflow-y-auto rounded-xl bg-ground p-3"
+                    tabIndex={0}
                     aria-label="Interaction transcript"
                   >
                     {current.messages.map((m, i) => (
@@ -274,6 +295,7 @@ export default function EpisodesDashboard() {
                     className="mt-3 flex gap-2"
                     onSubmit={(e) => {
                       e.preventDefault();
+                      if (!text.trim() || !activeInteraction) return;
                       dispatch(
                         episode.id,
                         { role: "patient", patientId: patient.id },
@@ -357,7 +379,7 @@ export default function EpisodesDashboard() {
                     key={m.id}
                     className="rounded-lg border border-line p-3 text-sm"
                   >
-                    <p>{m.text}</p>
+                    <p className="[overflow-wrap:anywhere]">{m.text}</p>
                     <p className="mt-2 text-xs text-body">
                       {m.source} · {m.verification} · {m.at} ·{" "}
                       {m.protocolVersion} · {m.permission} · {m.recordedBy} · {m.retention}
@@ -450,7 +472,7 @@ export default function EpisodesDashboard() {
                     key={t.id}
                     className="rounded-lg border border-line p-3 text-sm"
                   >
-                    <b>{t.title}</b>
+                    <b className="[overflow-wrap:anywhere]">{t.title}</b>
                     <p className="mt-1 text-xs text-body">
                       Handoff: {t.state} · {t.kind}
                     </p>
@@ -493,21 +515,21 @@ export default function EpisodesDashboard() {
               </label>
               <button
                 disabled={
-                  !schedule ||
+                  !canSchedule ||
                   role === "patient" ||
-                  closed ||
                   !patient.identityConfirmed
                 }
                 className="mt-2 rounded-lg border border-line px-3 py-2 text-sm font-semibold disabled:opacity-40"
                 onClick={() =>
                   send({
                     type: "schedule",
-                    at: new Date(schedule).toISOString(),
+                    at: new Date(scheduleTime).toISOString(),
                   })
                 }
               >
                 Record scheduled appointment
               </button>
+              {schedule && !canSchedule && <p className="mt-2 text-sm text-body">Choose a future time before submitting completion evidence.</p>}
               {episode.scheduledAt && (
                 <p className="mt-2 text-xs text-body">
                   Scheduled: {new Date(episode.scheduledAt).toLocaleString()}.
@@ -549,13 +571,14 @@ export default function EpisodesDashboard() {
                 </p>
                 <button
                   disabled={
-                    role !== "doctor" || episode.state !== "evidence_received"
+                    role !== "doctor" || episode.state !== "evidence_received" || awaitingHandoff
                   }
                   className="rounded-lg bg-gold px-4 py-2 text-sm font-bold text-navy disabled:opacity-40"
                   onClick={() => send({ type: "verify" })}
                 >
                   Doctor verify and close episode
                 </button>
+                {verificationHint && <p className="text-sm text-body">{verificationHint}</p>}
                 {episode.verifiedAt && (
                   <p className="text-xs text-green">
                     Verified {episode.verifiedAt} · doctor demo role ·{" "}
