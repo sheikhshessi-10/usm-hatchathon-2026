@@ -7,6 +7,7 @@ import NurseDashboard from "./nurse/NurseDashboard";
 import MomDashboard from "./mom/MomDashboard";
 import EpisodesDashboard from "./episodes/EpisodesDashboard";
 import { EpisodeProvider } from "./episodes/context";
+import ProtocolsDashboard from "./protocols/ProtocolsDashboard";
 import ReportsDashboard from "./reports/ReportsDashboard";
 import DoctorDashboard from "./doctor/DoctorDashboard";
 import { CareProvider } from "./data/workflow";
@@ -17,6 +18,7 @@ const views = [
   ["nurse", "Nurse", NurseDashboard],
   ["doctor", "Doctor", DoctorDashboard],
   ["reports", "Reports", ReportsDashboard],
+  ["protocols", "Protocols", ProtocolsDashboard],
 ] as const;
 
 function read() {
@@ -49,7 +51,7 @@ export default function App() {
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-navy text-white"><Activity size={19} aria-hidden="true" /></span>
                 CareBridge
               </a>
-              <nav aria-label="CareBridge navigation" className="order-last grid w-full grid-cols-5 gap-1 sm:order-none sm:flex sm:w-auto">
+              <nav aria-label="CareBridge navigation" className="order-last grid w-full grid-cols-3 gap-1 min-[460px]:grid-cols-6 sm:order-none sm:flex sm:w-auto">
                 {views.map(([id, label]) => (
                   <a key={id} href={`#${id}`} aria-current={view === id ? "page" : undefined} className={`grid min-h-11 place-items-center rounded-lg px-1 text-center text-xs font-bold sm:px-3 sm:text-sm ${view === id ? "bg-navy text-white" : "text-navy hover:bg-hover"}`}>
                     {label}

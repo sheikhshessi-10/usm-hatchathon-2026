@@ -113,6 +113,7 @@ export default function EpisodesDashboard() {
             live AI, SMS gateway, carrier calls, clinical integration, or
             authenticated role access.
           </p>
+          <a href="#protocols" className="mt-4 inline-block rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-navy">See sample outreach protocols</a>
         </header>
         {warning && (
           <p role="status" className="rounded-lg bg-amber-soft p-3 text-sm">

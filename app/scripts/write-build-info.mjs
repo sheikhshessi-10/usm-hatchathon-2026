@@ -7,7 +7,7 @@ export function buildInfo(env = process.env, now = new Date()) {
   if (env.VERCEL_ENV === 'production' && !commit) throw new Error('Production build requires an actual Git commit SHA');
   return { application: 'CareBridge', release: 'production-readiness-audit', commit, sourceCommit: commit,
     builtAt: now.toISOString(), environment: env.VERCEL_ENV || 'local',
-    features: ['nurse', 'doctor', 'mother', 'reports', 'care-loops'],
+    features: ['nurse', 'doctor', 'mother', 'reports', 'care-loops', 'protocols'],
   };
 }
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
