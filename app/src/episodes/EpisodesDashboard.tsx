@@ -119,7 +119,6 @@ export default function EpisodesDashboard() {
             {warning}
           </p>
         )}
-        <EpisodeSummary />
         <div className="flex flex-wrap gap-4 rounded-card border border-line bg-white p-4">
           <label className="text-sm font-semibold">
             Scenario
@@ -564,8 +563,8 @@ export default function EpisodesDashboard() {
                 )}
               </div>
             </Card>
-            <Card className="p-5">
-              <h2 className="font-bold">Protocol and allowed actions</h2>
+            <details className="rounded-card border border-line bg-white p-5">
+              <summary className="cursor-pointer font-bold">Protocol and allowed actions</summary>
               <p className="mt-2 text-sm">{protocol.objective}</p>
               <p className="mt-2 text-xs text-body">
                 Owner: {protocol.owner}. No clinical approval or regulatory
@@ -583,11 +582,11 @@ export default function EpisodesDashboard() {
                 trigger a bounded human-review endpoint. Opt-out and safety
                 checks run before ordinary content handling.
               </p>
-            </Card>
-            <Card className="p-5">
-              <h2 className="font-bold">
+            </details>
+            <details className="rounded-card border border-line bg-white p-5">
+              <summary className="cursor-pointer font-bold">
                 Cost per episode and verified completion
-              </h2>
+              </summary>
               <p className="mt-1 text-xs text-body">
                 Optional scenario model. Enter assumptions; these are not vendor
                 quotes or measured production costs. Each voice reply represents
@@ -652,12 +651,13 @@ export default function EpisodesDashboard() {
                 episodes. Incremental cost-effectiveness remains unavailable
                 without a valid comparison group.
               </p>
-            </Card>
+            </details>
           </div>
         </div>
-        <Card className="overflow-hidden">
-          <div className="p-5">
-            <h2 className="font-bold">Local episode audit</h2>
+        <EpisodeSummary />
+        <details className="overflow-hidden rounded-card border border-line bg-white">
+          <summary className="cursor-pointer p-5 font-bold">Local episode audit <span className="ml-2 text-sm font-normal text-body">{k.auditEvents} events</span></summary>
+          <div className="px-5 pb-4">
             <p className="mt-1 text-xs text-body">
               {k.auditEvents} auditable events; {k.blocked} blocked attempts. A
               local demo log is not an immutable production audit system.
@@ -697,7 +697,7 @@ export default function EpisodesDashboard() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </details>
         <div className="flex flex-wrap gap-4 text-sm">
           <button
             className="font-bold text-navy underline"

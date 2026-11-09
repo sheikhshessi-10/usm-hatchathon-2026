@@ -3,8 +3,12 @@ import { MOMS, status, type Mom } from "./moms";
 
 export type Review = { patientId: string; disposition: "reviewed" | "escalated" | "follow-up"; note: string; contactOutcome: "not-recorded" | "unreached" | "reached"; at: string };
 export type Task = { id: string; patientId: string; title: string; owner: "Nurse" | "Doctor"; dueDay: number; completed: boolean; source: "plan" | "doctor"; acceptedAt?: string; acceptedBy?: "Nurse" | "Doctor"; completedAt?: string };
-export type Workflow = { reviews: Review[]; tasks: Task[]; handled: Record<string, string> };
-export const initialWorkflow = (): Workflow => ({ reviews: [], handled: {}, tasks: MOMS.flatMap(m => (m.careTasks ?? []).map((t, i) => ({ id: `${m.id}-plan-${i}`, patientId: m.id, title: t.note, owner: "Nurse", dueDay: t.dueDay, completed: t.completedDay !== undefined, source: "plan" }))) });
+export const FEELINGS = ["Pretty good", "In between", "A hard day"] as const;
+export type Feeling = (typeof FEELINGS)[number];
+export type PortalCheckIn = { feeling: Feeling; note: string; at: string | null };
+
+export type Workflow = { reviews: Review[]; tasks: Task[]; handled: Record<string, string>; checkIns: Record<string, PortalCheckIn> };
+export const initialWorkflow = (): Workflow => ({ reviews: [], handled: {}, checkIns: {}, tasks: MOMS.flatMap(m => (m.careTasks ?? []).map((t, i) => ({ id: `${m.id}-plan-${i}`, patientId: m.id, title: t.note, owner: "Nurse", dueDay: t.dueDay, completed: t.completedDay !== undefined, source: "plan" }))) });
 const KEY = "carebridge-workflow-v1";
 export function parseWorkflow(raw: string): Workflow | null {
   const fallback = initialWorkflow();
@@ -18,7 +22,11 @@ export function parseWorkflow(raw: string): Workflow | null {
     if (new Set(x.tasks.map(t => t.id)).size !== x.tasks.length || !Object.entries(x.handled).every(([id, note]) => known(id) && typeof note === "string" && note.trim().length>0 && note.length<=3000)) return null;
     if (!fallback.tasks.every(t => x.tasks.some(saved => saved.id === t.id && saved.patientId === t.patientId && saved.source === "plan"))) return null;
     if (!x.tasks.every(t => (t.acceptedAt === undefined && t.acceptedBy === undefined || date(t.acceptedAt) && t.acceptedBy === t.owner) && (t.completedAt === undefined || t.completed && date(t.completedAt)) && (!t.acceptedAt || !t.completedAt || Date.parse(t.completedAt)>=Date.parse(t.acceptedAt)))) return null;
-    return x;
+    const checkIns = x.checkIns === undefined ? {} : x.checkIns;
+    if (!checkIns || typeof checkIns !== "object" || Array.isArray(checkIns)) return null;
+    if (!Object.entries(checkIns).every(([id, entry]) => known(id) && entry && FEELINGS.includes(entry.feeling)
+      && typeof entry.note === "string" && entry.note.length <= 600 && (entry.at === null || date(entry.at)))) return null;
+    return { ...x, checkIns };
   } catch { return null; }
 }
 export function readWorkflow(raw: string | null): Workflow { return raw ? parseWorkflow(raw) ?? initialWorkflow() : initialWorkflow(); }
@@ -44,13 +52,25 @@ export function continuityMetrics(moms: Mom[], state: Workflow) {
     handoffsPending: tasks.filter(t => t.source === "doctor" && !t.acceptedAt && !t.completed).length,
   };
 }
-type CareContext = { state: Workflow; moms: Mom[]; storageWarning: boolean; recoveryRequired: boolean; review: (r: Omit<Review, "at">) => void; addTask: (t: Omit<Task, "id" | "completed" | "source">) => void; acceptTask: (id: string, actor: Task["owner"]) => void; completeTask: (id: string, actor: Task["owner"]) => void; handle: (id: string, note: string) => void; reset: () => void };
+function restoreLegacyCheckIns(state: Workflow) {
+  for (const mom of MOMS) {
+    const key = `carebridge-demo-feeling-v1:${mom.id}:${mom.history?.deliveryDate ?? "demo"}:${mom.dayToday}`;
+    const feeling = FEELINGS.find(label => label === localStorage.getItem(key));
+    if (feeling) state.checkIns[mom.id] = { feeling, note: "", at: null };
+  }
+  return state;
+}
+
+type CareContext = { state: Workflow; saveCheckIn: (patientId: string, feeling: Feeling, note: string) => void; moms: Mom[]; storageWarning: boolean; recoveryRequired: boolean; review: (r: Omit<Review, "at">) => void; addTask: (t: Omit<Task, "id" | "completed" | "source">) => void; acceptTask: (id: string, actor: Task["owner"]) => void; completeTask: (id: string, actor: Task["owner"]) => void; handle: (id: string, note: string) => void; reset: () => void };
 const Context = createContext<CareContext | null>(null);
 export function CareProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState(() => {
     try {
       const raw = typeof localStorage === "undefined" ? null : localStorage.getItem(KEY);
       const parsed = raw !== null ? parseWorkflow(raw) : initialWorkflow();
+      if (parsed && typeof localStorage !== "undefined" && (raw === null || JSON.parse(raw).checkIns === undefined)) {
+        restoreLegacyCheckIns(parsed);
+      }
       return { state: parsed ?? initialWorkflow(), recoveryRequired: raw !== null && !parsed };
     } catch { return { state: initialWorkflow(), recoveryRequired: true }; }
   });
@@ -67,6 +87,11 @@ export function CareProvider({ children }: { children: ReactNode }) {
   const addTask = (t: Omit<Task, "id" | "completed" | "source">) => { if (!t.title.trim() || !Number.isInteger(t.dueDay) || t.dueDay < 0 || t.dueDay>365 || t.title.length>300 || !["Nurse","Doctor"].includes(t.owner) || !MOMS.some(m => m.id === t.patientId)) return; setState(s => ({ ...s, tasks: [...s.tasks, { ...t, title: t.title.trim(), id: crypto.randomUUID(), completed: false, source: "doctor" }] })); };
   const acceptTask = (id: string, actor: Task["owner"]) => setState(s => ({ ...s, tasks: s.tasks.map(t => t.id === id && t.owner === actor && t.source === "doctor" && !t.acceptedAt && !t.completed ? { ...t, acceptedAt: new Date().toISOString(), acceptedBy: actor } : t) }));
   const completeTask = (id: string, actor: Task["owner"]) => setState(s => ({ ...s, tasks: s.tasks.map(t => t.id === id && t.owner === actor && !t.completed && (t.source === "plan" || t.acceptedAt) ? { ...t, completed: true, completedAt: new Date().toISOString() } : t) }));
-  return <Context.Provider value={{ state, moms, storageWarning, recoveryRequired: session.recoveryRequired, review, addTask, acceptTask, completeTask, handle: (id, note) => { if(MOMS.some(m=>m.id===id)&&note.trim()&&note.length<=3000)setState(s => ({ ...s, handled: { ...s.handled, [id]: note.trim() } })); }, reset: () => setSession({state:initialWorkflow(),recoveryRequired:false}) }}>{children}</Context.Provider>;
+  const saveCheckIn = (patientId: string, feeling: Feeling, note: string) => {
+    if (!MOMS.some(m => m.id === patientId) || !FEELINGS.includes(feeling) || note.length > 600) return;
+    const entry = { feeling, note: note.trim(), at: new Date().toISOString() };
+    setState(s => ({ ...s, checkIns: { ...s.checkIns, [patientId]: entry } }));
+  };
+  return <Context.Provider value={{ state, saveCheckIn, moms, storageWarning, recoveryRequired: session.recoveryRequired, review, addTask, acceptTask, completeTask, handle: (id, note) => { if(MOMS.some(m=>m.id===id)&&note.trim()&&note.length<=3000)setState(s => ({ ...s, handled: { ...s.handled, [id]: note.trim() } })); }, reset: () => setSession({state:initialWorkflow(),recoveryRequired:false}) }}>{children}</Context.Provider>;
 }
 export function useCare() { const ctx = useContext(Context); if (!ctx) throw new Error("CareProvider required"); return ctx; }

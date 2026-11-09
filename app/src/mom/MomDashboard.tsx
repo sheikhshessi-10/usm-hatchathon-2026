@@ -1,17 +1,17 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight, CalendarDays, Check, ChevronRight, CircleHelp, ClipboardList, CloudRain,
   Heart, HeartPulse, History, House, Meh, Phone, Pill, Smile, TriangleAlert,
 } from "lucide-react";
 import { status, type Mom } from "../data/moms";
-import { useCare } from "../data/workflow";
+import { FEELINGS, useCare, type Feeling } from "../data/workflow";
 import { BPChart } from "../ui/parts";
 import "./patient.css";
 
-const FEELINGS = [
-  { label: "Pretty good", icon: Smile, color: "peach" },
-  { label: "In between", icon: Meh, color: "lavender" },
-  { label: "A hard day", icon: CloudRain, color: "blue" },
+const FEELING_STYLES = [
+  { icon: Smile, color: "peach" },
+  { icon: Meh, color: "lavender" },
+  { icon: CloudRain, color: "blue" },
 ] as const;
 const PAGES = [
   { label: "Today", icon: House },
@@ -20,36 +20,27 @@ const PAGES = [
   { label: "Support", icon: CircleHelp },
 ] as const;
 
-type Feeling = (typeof FEELINGS)[number]["label"];
 type Page = (typeof PAGES)[number]["label"];
 
-function checkInKey(mom: Mom) {
-  return `carebridge-demo-feeling-v1:${mom.id}:${mom.history?.deliveryDate ?? "demo"}:${mom.dayToday}`;
+function readPatientRoute() {
+  const [, patientId, section] = typeof location === "undefined" ? [] : location.hash.split("/");
+  return { patientId, page: section === "history" ? "My history" as const : "Today" as const };
 }
 
 function DailyCheckIn({ mom }: { mom: Mom }) {
-  const [saved, setSaved] = useState<Feeling | undefined>(() => {
-    try {
-      const value = localStorage.getItem(checkInKey(mom));
-      return FEELINGS.find(({ label }) => label === value)?.label;
-    } catch {
-      return undefined;
-    }
-  });
-  const [choice, setChoice] = useState(saved);
-  const [editing, setEditing] = useState(!saved);
-  const [sessionOnly, setSessionOnly] = useState(false);
+  const { state, saveCheckIn, storageWarning, recoveryRequired } = useCare();
+  const saved = state.checkIns[mom.id];
+  const [choice, setChoice] = useState<Feeling | undefined>(saved?.feeling);
+  const [note, setNote] = useState(saved?.note ?? "");
+  const [isEditing, setEditing] = useState(false);
+  const result = useRef<HTMLDivElement>(null);
+  const editing = isEditing || !saved;
 
   function save() {
-    if (!choice) return;
-    try {
-      localStorage.setItem(checkInKey(mom), choice);
-      setSessionOnly(false);
-    } catch {
-      setSessionOnly(true);
-    }
-    setSaved(choice);
+    if (!choice || recoveryRequired) return;
+    saveCheckIn(mom.id, choice, note);
     setEditing(false);
+    requestAnimationFrame(() => result.current?.focus());
   }
 
   return (
@@ -60,33 +51,50 @@ function DailyCheckIn({ mom }: { mom: Mom }) {
         <>
           <p className="patient-muted">Choose the option that best describes your day.</p>
           <div className="patient-feelings" role="group" aria-label="How are you feeling today?">
-            {FEELINGS.map(({ label, icon: Icon, color }) => (
-              <button type="button" key={label} aria-pressed={choice === label} onClick={() => setChoice(label)}>
-                <span className={`patient-face patient-face--${color}`}><Icon aria-hidden="true" size={25} strokeWidth={1.7} /></span>
-                {label}
-              </button>
-            ))}
+            {FEELING_STYLES.map(({ icon: Icon, color }, index) => {
+              const label = FEELINGS[index];
+              return (
+                <button type="button" key={label} aria-pressed={choice === label} onClick={() => setChoice(label)}>
+                  <span className={`patient-face patient-face--${color}`}><Icon aria-hidden="true" size={25} strokeWidth={1.7} /></span>
+                  {label}
+                </button>
+              );
+            })}
           </div>
-          <button type="button" className="patient-primary" disabled={!choice} onClick={save}>
+          <label className="patient-note">
+            Anything you’d like to add? <span>Optional</span>
+            <textarea rows={2} maxLength={600} value={note} onChange={event => setNote(event.target.value)} placeholder="For example, I need help getting to my next visit." />
+          </label>
+          <button type="button" className="patient-primary" disabled={!choice || recoveryRequired} onClick={save}>
             Save my check-in <ArrowRight size={17} aria-hidden="true" />
           </button>
         </>
       ) : (
-        <div className="patient-saved" role="status">
+        <div className="patient-saved" role="status" tabIndex={-1} ref={result}>
           <span className="patient-icon patient-icon--mint"><Check size={20} aria-hidden="true" /></span>
-          <div><strong>{saved}</strong><p>{sessionOnly ? "Saved for this session." : "Saved on this device."}</p></div>
+          <div><strong>{saved?.feeling}</strong><p>{storageWarning ? "Saved for this session." : "Saved on this device."}</p></div>
           <button type="button" className="patient-link" onClick={() => setEditing(true)}>Edit</button>
         </div>
       )}
-      <p className="patient-fine">Demo check-ins stay in this browser and don’t reach a care team.</p>
+      <p className="patient-fine">Use fictional details only. This entry appears in the demo nurse and doctor views on this device.</p>
     </section>
   );
 }
 
 export default function MomDashboard() {
   const { moms, state } = useCare();
-  const [momId, setMomId] = useState(moms[0].id);
-  const [page, setPage] = useState<Page>("Today");
+  const [momId, setMomId] = useState(() => readPatientRoute().patientId);
+  const [page, setPage] = useState<Page>(() => readPatientRoute().page);
+  useEffect(() => {
+    const sync = () => {
+      if (!location.hash.startsWith("#mom")) return;
+      const route = readPatientRoute();
+      setMomId(route.patientId);
+      setPage(route.page);
+    };
+    addEventListener("hashchange", sync);
+    return () => removeEventListener("hashchange", sync);
+  }, []);
   const nav = useRef<HTMLElement>(null);
   const mom = moms.find((profile) => profile.id === momId) ?? moms[0];
   const { level, today } = status(mom);
@@ -94,6 +102,7 @@ export default function MomDashboard() {
   const pending = tasks.filter((task) => !task.completed).sort((a, b) => a.dueDay - b.dueDay);
   const next = pending[0];
   const completed = tasks.length - pending.length;
+  const checkIn = state.checkIns[mom.id];
   const urgent = level.startsWith("red");
   const day = Math.max(1, Math.min(mom.dayToday, 10));
 
@@ -106,10 +115,10 @@ export default function MomDashboard() {
     <main className="patient-portal">
       <div className="patient-shell">
         <header className="patient-header">
-          <div className="patient-brand"><span><Heart size={19} aria-hidden="true" /></span> CareBridge <small>My care</small></div>
+          <div className="patient-brand"><span><Heart size={19} aria-hidden="true" /></span> My care</div>
           <label className="patient-profile">
             <span>Demo profile</span>
-            <select value={mom.id} onChange={(event) => { setMomId(event.target.value); setPage("Today"); }}>
+            <select value={mom.id} onChange={(event) => { setMomId(event.target.value); setPage("Today"); location.hash = `#mom/${event.target.value}`; }}>
               {moms.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
             </select>
           </label>
@@ -144,14 +153,15 @@ export default function MomDashboard() {
         )}
 
         <div className="patient-grid patient-today" hidden={page !== "Today"}>
-            <DailyCheckIn key={checkInKey(mom)} mom={mom} />
+
             <section className="patient-card patient-next">
               <p className="patient-kicker"><CalendarDays size={15} aria-hidden="true" /> Care plan</p>
               <h2>Your next action</h2>
-              {next ? <div className="patient-next-action"><span className="patient-icon"><ClipboardList size={20} aria-hidden="true" /></span><div><strong>{next.title}</strong><p>Due on day {next.dueDay} after delivery</p></div></div> : <p className="patient-muted">Your sample care actions are up to date.</p>}
+              {next ? <div className="patient-next-action"><span className="patient-icon"><ClipboardList size={20} aria-hidden="true" /></span><div><strong>{next.title}</strong><p>{next.dueDay < day ? "Past due" : next.dueDay === day ? "Due today" : `Due on day ${next.dueDay} after delivery`}</p></div></div> : <p className="patient-muted">Your sample care actions are up to date.</p>}
               <p className="patient-visit"><strong>Next visit</strong> {mom.visit}</p>
               <button type="button" className="patient-link" onClick={() => switchPage("My plan")}>See my care plan <ArrowRight size={16} aria-hidden="true" /></button>
             </section>
+            <DailyCheckIn key={mom.id} mom={mom} />
             <section className="patient-card patient-journey">
               <div>
                 <p className="patient-kicker"><HeartPulse size={15} aria-hidden="true" /> Phone check-ins</p>
@@ -177,7 +187,7 @@ export default function MomDashboard() {
               <p className="patient-kicker"><ClipboardList size={15} aria-hidden="true" /> Care actions</p>
               <h2>Your follow-up plan</h2>
               {mom.useCase && <p className="patient-muted">{mom.useCase}</p>}
-              <p className="patient-muted">{completed} of {tasks.length} actions marked complete by the demo care team.</p>
+              <p className="patient-muted">{tasks.length ? `${completed} of ${tasks.length} actions marked complete by the demo care team.` : "Your demo care team hasn’t added any follow-up actions yet."}</p>
               <ul className="patient-list">
                 {[...pending, ...tasks.filter((task) => task.completed)].map((task) => (
                   <li key={task.id}>
@@ -201,6 +211,16 @@ export default function MomDashboard() {
 
         {page === "My history" && (
           <div className="patient-grid">
+            <section className="patient-card patient-history-entry">
+              <p className="patient-kicker"><Heart size={15} aria-hidden="true" /> Portal check-in</p>
+              <h2>What you shared</h2>
+              {checkIn ? (
+                <>
+                  <p className="patient-muted">Day {mom.dayToday} · {checkIn.feeling}</p>
+                  {checkIn.note && <p className="patient-entry-note">{checkIn.note}</p>}
+                </>
+              ) : <p className="patient-muted">Your daily check-in will appear here once you save it.</p>}
+            </section>
             <section className="patient-card">
               <p className="patient-kicker"><HeartPulse size={15} aria-hidden="true" /> Your readings</p>
               <h2>Blood pressure</h2>
