@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import type { CallPatient } from "../data/callPatient";
+import { DOCTOR_REVIEW, type CallPatient } from "../data/callPatient";
 import { Card } from "../ui/parts";
 
 type Row = {
   id: string; momName: string; status: string; startedAt: string; endedAt: string | null; endedReason: string | null;
-  data: { reached?: boolean; checkupComplete?: boolean; checklist?: { id: string; status?: string }[] } | null;
+  data: { reached?: boolean; checkupComplete?: boolean; checklist?: { id: string; status?: string; answer?: string }[] } | null;
 };
 
 /** Every AI check-up call for this patient, logged with how many doctor's orders were covered. Refreshes every 10 seconds. */
@@ -44,6 +44,12 @@ export function CheckupLog({ patient }: { patient: CallPatient }) {
                 <span>{new Date(r.startedAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}{mins ? ` · ${mins} min` : ""}</span>
                 <span className="text-body">{list.length ? `${asked}/${patient.checks.length} orders checked${concerns ? ` · ${concerns} concern${concerns > 1 ? "s" : ""}` : ""}` : ""}</span>
                 <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${tone}`}>{label}{ok && concerns ? " · sent to nurse" : ""}</span>
+                {done && concerns > 0 && (
+                  <div className="w-full rounded-lg bg-red-soft px-3 py-2">
+                    <p className="text-xs font-bold text-red">Alert to nurse and doctor. Doctor, please check:</p>
+                    <ul className="list-disc pl-5 text-xs">{list.filter((c) => c.status === "concern").map((c) => <li key={c.id}><b>{patient.checks.find((k) => k.id === c.id)?.label ?? c.id}</b>{c.answer ? ` ("${c.answer}")` : ""}: {DOCTOR_REVIEW[c.id] ?? "Review this finding."}</li>)}</ul>
+                  </div>
+                )}
               </li>
             );
           })}

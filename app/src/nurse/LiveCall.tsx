@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { PhoneCall, PhoneOff } from "lucide-react";
 import { evaluate, type CheckIn, type MomSymptom } from "../lib/rules";
-import type { CallPatient } from "../data/callPatient";
+import { DOCTOR_REVIEW, type CallPatient } from "../data/callPatient";
 import { Card, Pill } from "../ui/parts";
 import { LEVEL_TEXT } from "../data/moms";
 import { PatientFile } from "./PatientFile";
@@ -211,6 +211,16 @@ function Checklist({ patient, data }: { patient: CallPatient; data: CallData }) 
           {complete ? "Check-up complete" : "Check-up incomplete"} · {asked}/{rows.length} asked{concerns ? ` · ${concerns} concern${concerns > 1 ? "s" : ""}` : ""}
         </span>
       </div>
+      {concerns > 0 && (
+        <div role="alert" className="border-b border-line bg-red-soft px-3 py-3 text-sm">
+          <p className="font-bold text-red">Alert sent to nurse and doctor</p>
+          <p className="mt-1 font-semibold">Doctor, please check:</p>
+          <ul className="mt-1 list-disc pl-5">
+            {rows.filter(({ r }) => r?.status === "concern").map(({ c, r }) => <li key={c.id}><b>{c.label}</b> ({r?.answer || "concern reported"}): {DOCTOR_REVIEW[c.id] ?? "Review this finding."}</li>)}
+          </ul>
+        </div>
+      )}
+      {complete && concerns === 0 && <p className="border-b border-line bg-green-soft px-3 py-2 text-sm font-semibold text-green">Successful check-up logged. Nothing abnormal. Shared with nurse and doctor.</p>}
       <ul className="divide-y divide-line text-sm">
         {rows.map(({ c, r }) => {
           const st = r?.status ?? "not_asked";

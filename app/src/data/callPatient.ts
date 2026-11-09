@@ -27,3 +27,22 @@ export const DEFAULT_CHECKS: Check[] = [
 export function fromMom(m: Mom): CallPatient {
   return { id: m.id, name: m.name, babyName: m.baby.name, day: m.dayToday, file: buildPatientFile(m), checks: DEFAULT_CHECKS };
 }
+
+/**
+ * What the doctor should look at when a check comes back as a concern.
+ * Fixed list from standard postpartum guidance (ACOG, SMFM, AWHONN POST-BIRTH, AAP). Not written by the AI.
+ */
+export const DOCTOR_REVIEW: Record<string, string> = {
+  meds: "Review medicine adherence and blood pressure control; consider dose or regimen change.",
+  bp: "Confirm the reading and assess for severe-range postpartum hypertension (SMFM/ACOG thresholds).",
+  headache_vision: "Evaluate for postpartum preeclampsia: repeat BP, neuro symptoms, CBC, liver enzymes, creatinine.",
+  abdominal_pain: "Evaluate for preeclampsia with severe features or HELLP: liver enzymes, platelets; exam for other causes.",
+  discharge: "Evaluate for postpartum infection (endometritis): temperature, uterine tenderness, discharge exam.",
+  bleeding: "Evaluate for delayed postpartum hemorrhage: amount, vitals, hemoglobin, retained tissue.",
+  stitches: "Examine the perineal repair for infection or wound breakdown.",
+  fever: "Find the source of fever: uterus, wound, breast, urine; consider labs and exam.",
+  breastfeeding: "Assess for mastitis or breast abscess.",
+  mood: "Screen for postpartum depression or anxiety (EPDS); same-day contact if any self-harm thoughts.",
+  baby: "Pediatric follow-up: feeding, hydration, weight, and jaundice check.",
+  followup: "Care coordinator: arrange transport or childcare, or offer a telehealth BP check.",
+};
