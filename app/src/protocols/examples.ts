@@ -7,7 +7,11 @@ export const channels = [
     id: "voice",
     title: "Phone call",
     subtitle: "Transcript",
-    opening: "Hi, this is CareBridge, your automated follow-up assistant. Is now a good time for a quick check-in?",
+    opening: "Hey Maya, it’s CareBridge, your automated check-in. Just wanted to see how you’re doing. Got a minute?",
+    routine: [
+      "Oh, good! I’ll make a note that you got it done. Your care team can check it once the record comes through.",
+      "Thanks for picking up, Maya. Hope you get a little time for yourself today.",
+    ],
     protocol: [
       "Confirm identity and permission to speak before discussing the care plan.",
       "Read back important details. If the call is missed or interrupted, record the attempt and route an authorized retry for staff review.",
@@ -17,7 +21,11 @@ export const channels = [
     id: "sms",
     title: "Text message",
     subtitle: "SMS preview",
-    opening: "Hi from CareBridge. Ready for a quick follow-up check-in? Reply STOP to stop outreach.",
+    opening: "Hey, just checking in. How are you holding up today? — CareBridge\n\nReply STOP to opt out.",
+    routine: [
+      "Thanks for the update! I’ve made a note of it. Your care team can confirm it once they have the record.",
+      "Hope the rest of your day goes smoothly.",
+    ],
     protocol: [
       "Use the consented number and keep reminders generic. Leave sensitive details for the authenticated portal.",
       "Honor STOP and record delivery or reply status separately. An unanswered text leaves follow-up open.",
@@ -27,7 +35,11 @@ export const channels = [
     id: "app",
     title: "AI agent",
     subtitle: "Portal chat",
-    opening: "Hi, I’m CareBridge, your automated follow-up assistant. How is your follow-up going?",
+    opening: "Hey Maya, I’m the CareBridge assistant. Just checking in. How’s your day going?",
+    routine: [
+      "Of course. I’ve made a note that you went in this morning. Your care team can confirm it once the record comes through.",
+      "Glad you stopped by, Maya. Take care today.",
+    ],
     protocol: [
       "Use only the patient’s own context after identity confirmation. Explain the agent’s role and keep questions within the care plan.",
       "Route clinical questions or repeated misunderstandings to staff. Do not interpret results or change medication.",
@@ -38,19 +50,20 @@ export const channels = [
   title: string;
   subtitle: string;
   opening: string;
+  routine: readonly [string, string];
   protocol: readonly string[];
 }>;
 
 const routineReplies: Record<Channel, string> = {
-  voice: "Yes, now is fine. I finished the screening this morning.",
-  sms: "I completed the test this morning.",
-  app: "I finished my screening this morning. Can you log that for my team?",
+  voice: "Yeah, I’ve got a minute. I got the test done this morning, actually.",
+  sms: "Hey! I got the test done this morning. Glad that’s off my list.",
+  app: "Pretty good, actually. I finished my screening this morning. Can you make a note of that?",
 };
 
 const urgentReplies: Record<Channel, string> = {
-  voice: "I know you’re calling about the visit, but I suddenly have chest pain and can't breathe.",
+  voice: "Yeah, I’m glad you called. My chest hurts all of a sudden and I can't breathe.",
   sms: "I have chest pain and I can't breathe.",
-  app: "Before we talk about the appointment, I need help. I have chest pain and can't breathe.",
+  app: "Hey, something feels really wrong. I have chest pain and I can't breathe.",
 };
 
 export function replayExample(channel: Channel, scenario: Scenario, accepted = false) {

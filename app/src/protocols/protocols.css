@@ -55,7 +55,7 @@
 .protocol-messages { display: grid; gap: .75rem; min-height: 20rem; align-content: start; padding: .7rem; font-size: .85rem; }
 .protocol-messages li { min-width: 0; }
 .protocol-speaker { display: block; margin-bottom: .22rem; font-size: .7rem; font-weight: 750; color: var(--protocol-muted); }
-.protocol-messages p { line-height: 1.4; overflow-wrap: anywhere; }
+.protocol-messages p { line-height: 1.4; overflow-wrap: anywhere; white-space: pre-line; }
 .protocol-conversation--voice .protocol-messages li { padding: .62rem .7rem; border-left: 3px solid #a4c7c7; border-radius: .3rem .6rem .6rem .3rem; background: #fff; }
 .protocol-conversation--voice .protocol-messages li[data-speaker="patient"] { border-color: #7293b3; background: #e9f1f8; }
 
