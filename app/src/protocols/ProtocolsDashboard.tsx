@@ -64,6 +64,11 @@ export default function ProtocolsDashboard() {
           </details>}
         </section>
 
+        <div className="protocol-channel-jump" role="group" aria-label="Jump to a conversation">
+          {channels.map(channel => (
+            <button key={channel.id} type="button" onClick={() => document.getElementById(`protocol-${channel.id}`)?.focus()}>{channel.title}</button>
+          ))}
+        </div>
         <div className="protocol-channels">
           {channels.map(channel => {
             const result = replayExample(channel.id, scenario, acknowledged.includes(channel.id));
@@ -75,7 +80,7 @@ export default function ProtocolsDashboard() {
               <section key={channel.id} className="protocol-channel" aria-labelledby={headingId}>
                 <header className="protocol-channel-header">
                   <span><Icon size={21} aria-hidden="true" /></span>
-                  <div><h2 id={headingId}>{channel.title}</h2><p>{channel.subtitle}</p></div>
+                  <div><h2 id={headingId} tabIndex={-1}>{channel.title}</h2><p>{channel.subtitle}</p></div>
                 </header>
                 {urgent && channel.id === "app" && (
                   <details className="protocol-emergency-call">
@@ -92,7 +97,7 @@ export default function ProtocolsDashboard() {
                     <div><strong>{channel.id === "voice" ? result.patient.name : "Aven"}</strong><small>{channel.id === "voice" ? "Simulated outbound call" : channel.id === "sms" ? "Simulated text thread" : "Simulated portal chat"}</small></div>
                   </div>
                   <p className="protocol-chat-meta"><LockKeyhole size={12} aria-hidden="true" /> Demo consent and identity confirmed</p>
-                  <ol className="protocol-messages" tabIndex={0} aria-label={`${channel.title} sample conversation`}>
+                  <ol key={scenario} className="protocol-messages" tabIndex={0} aria-label={`${channel.title} sample conversation`}>
                     {result.messages.map((message, index) => (
                       <li key={index} data-speaker={message.who}>
                         <span className="protocol-speaker">{message.who === "patient" ? result.patient.name : "Aven"}{channel.id === "voice" && <> · <time dateTime={message.at}>{time.format(new Date(message.at))}</time></>}</span>

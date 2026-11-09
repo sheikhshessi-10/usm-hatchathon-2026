@@ -27,6 +27,18 @@ export function parseTranscript(momLines: string): CallData {
   return { reached: true, sys: bp ? +bp[1] : undefined, dia: bp ? +bp[2] : undefined, symptoms };
 }
 
+export function readCallAnswers(recorded: CallData | null, patientText: string): CallData | null {
+  if (recorded?.reached === false) return null;
+  if (recorded && (
+    (recorded.sys != null && recorded.dia != null) || Array.isArray(recorded.symptoms) ||
+    recorded.babyTempF != null || recorded.babyFeeds != null || recorded.babyWetDiapers != null ||
+    recorded.babyYellow != null || recorded.babyHardToWake != null || recorded.babyCantWake != null ||
+    recorded.babyFeedingPoorly != null
+  )) return recorded;
+  const parsed = parseTranscript(patientText);
+  return (parsed.sys != null && parsed.dia != null) || parsed.symptoms?.length ? parsed : null;
+}
+
 export function toCheckIn(d: CallData, day: number): CheckIn {
   return {
     day, answered: d.reached !== false,
@@ -39,6 +51,8 @@ export function toCheckIn(d: CallData, day: number): CheckIn {
   };
 }
 
+export const NO_ANSWER = /no-answer|busy|voicemail|failed|did-not-answer/i;
+
 const STEP: Record<string, string> = { queued: "Dialing...", ringing: "Ringing...", "in-progress": "On the call now", forwarding: "Transferring", ended: "Call ended" };
 
 export function LiveCall({ mom }: { mom: Mom }) {
@@ -46,16 +60,25 @@ export function LiveCall({ mom }: { mom: Mom }) {
   const [st, setSt] = useState<Status | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [pollWarning, setPollWarning] = useState(false);
   const timer = useRef<number>();
+  const launch = useRef<HTMLButtonElement>(null);
 
   async function start() {
-    setErr(null); setSt(null); setBusy(true);
+    setConfirming(false);
+    setErr(null); setSt(null); setCallId(null); setPollWarning(false); setBusy(true);
     try {
       const r = await fetch("/api/call", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ momName: mom.name, babyName: mom.baby.name, day: mom.dayToday }) });
       const j = await r.json();
-      if (!r.ok) throw new Error(j.detail ? `${j.error} ${typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail)}` : j.error);
+      if (!r.ok || typeof j.id !== "string" || !j.id) {
+        throw new Error(r.status === 503 ? "Live calling is unavailable on this deployment." : "The demo call could not be started.");
+      }
       setCallId(j.id);
-    } catch (e) { setErr(String((e as Error).message ?? e)); setBusy(false); }
+    } catch (error) {
+      setErr(error instanceof Error && error.message.startsWith("Live calling") ? error.message : "The demo call could not be started. Try again.");
+      setBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -64,19 +87,27 @@ export function LiveCall({ mom }: { mom: Mom }) {
     const tick = async () => {
       try {
         const r = await fetch(`/api/call-status?id=${callId}`);
+        if (!r.ok) throw new Error("Call status unavailable");
         const j = (await r.json()) as Status;
-        if (!stop && r.ok) setSt(j);
-        // Keep checking until the call ends and the AI has written down the answers.
-        if (!stop && !(j.status === "ended" && (j.data || j.summary || j.endedReason))) timer.current = window.setTimeout(tick, 2500);
-        else setBusy(false);
-      } catch { if (!stop) timer.current = window.setTimeout(tick, 4000); }
+        if (stop) return;
+        setSt(j);
+        setPollWarning(false);
+        if (j.status === "ended" && (j.data || j.summary || j.endedReason)) setBusy(false);
+        else timer.current = window.setTimeout(tick, 2500);
+      } catch {
+        if (stop) return;
+        setPollWarning(true);
+        timer.current = window.setTimeout(tick, 4000);
+      }
     };
     tick();
     return () => { stop = true; window.clearTimeout(timer.current); };
   }, [callId]);
 
   const ended = st?.status === "ended";
-  const data = ended ? (st?.data && (st.data.sys || st.data.symptoms?.length || st.data.reached !== undefined) ? st.data : parseTranscript(st!.messages.filter((m) => m.role === "mom").map((m) => m.text).join(" "))) : null;
+  const unreached = ended && (st.data?.reached === false || NO_ANSWER.test(st.endedReason ?? ""));
+  const spoken = ended ? st.messages.filter(message => message.role === "mom").map(message => message.text).join(" ").trim() : "";
+  const data = ended && !unreached ? readCallAnswers(st.data, spoken) : null;
   const result = data ? evaluate(toCheckIn(data, mom.dayToday)) : null;
   const first = mom.name.split(" ")[0];
 
@@ -84,28 +115,41 @@ export function LiveCall({ mom }: { mom: Mom }) {
     <Card className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-bold">Live AI check-in call</h3>
-          <p className="text-sm text-body">A real phone call to the demo phone. The AI asks the questions. Our fixed rules decide the result.</p>
+          <h3 className="font-bold">Live demo phone call</h3>
+          <p className="text-sm text-body">Aven calls the configured demo phone using this fictional profile. Open the outreach protocols for the simulated escalation walkthrough.</p>
         </div>
-        <button onClick={start} disabled={busy} className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy disabled:opacity-60">
-          <PhoneCall size={16} /> {busy ? "Call running..." : `Call ${first} now`}
+        <button ref={launch} type="button" onClick={() => setConfirming(true)} disabled={busy || confirming} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy disabled:opacity-60">
+          <PhoneCall size={16} aria-hidden="true" /> {busy ? "Call in progress" : "Start demo phone call"}
         </button>
       </div>
 
-      {err && <p className="mt-3 rounded-xl bg-red-soft px-4 py-3 text-sm text-red">{err}</p>}
+      {confirming && <div className="mt-3 rounded-lg border border-line p-3 text-sm">
+        <p>This will ring the configured demo phone. Make sure the recipient is expecting the call.</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button type="button" className="min-h-11 rounded-lg bg-navy px-3 font-bold text-white" onClick={start}>Call demo phone</button>
+          <button type="button" autoFocus className="min-h-11 rounded-lg border border-line px-3 font-semibold" onClick={() => {
+            setConfirming(false);
+            requestAnimationFrame(() => launch.current?.focus());
+          }}>Cancel</button>
+        </div>
+      </div>}
+      {err && <p role="alert" className="mt-3 rounded-xl bg-red-soft px-4 py-3 text-sm text-red">{err}</p>}
 
       {callId && (
         <div className="mt-4 flex flex-col gap-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-navy">
+          <div role="status" className="flex items-center gap-2 text-sm font-semibold text-navy">
             {ended ? <PhoneOff size={15} /> : <span className="h-2 w-2 animate-pulse rounded-full bg-green" />}
             {STEP[st?.status ?? "queued"] ?? st?.status}
-            {ended && !result && " · writing up answers..."}
+            {ended && busy && " · waiting for answers"}
           </div>
 
+          {pollWarning && <p role="status" className="text-sm text-body">Call status is temporarily unavailable. Checking again…</p>}
+          {ended && !busy && !result && <p className="text-sm text-body">{unreached ? "No patient was reached on this call." : "The call ended without enough patient responses to show a result."}</p>}
+
           {st && st.messages.length > 0 && (
-            <div className="max-h-64 overflow-y-auto rounded-xl bg-ground p-3 text-sm">
+            <div role="region" aria-label="Live call transcript" tabIndex={0} className="max-h-64 overflow-y-auto rounded-xl bg-ground p-3 text-sm [overflow-wrap:anywhere]">
               {st.messages.map((m, i) => (
-                <p key={i} className="py-1"><b className={m.role === "ai" ? "text-navy" : "text-ink"}>{m.role === "ai" ? "CareBridge: " : `${first}: `}</b>{m.text}</p>
+                <p key={i} className="py-1"><b className={m.role === "ai" ? "text-navy" : "text-ink"}>{m.role === "ai" ? "Aven: " : `${first}: `}</b>{m.text}</p>
               ))}
             </div>
           )}
@@ -122,7 +166,7 @@ export function LiveCall({ mom }: { mom: Mom }) {
               </ul>
               {data.questionsForNurse && <p className="mt-2 text-sm"><b>Question for nurse:</b> {data.questionsForNurse}</p>}
               {st?.summary && <p className="mt-2 text-sm text-body">{st.summary}</p>}
-              {st?.recordingUrl && <audio className="mt-3 w-full" controls src={st.recordingUrl} />}
+              {st?.recordingUrl && <audio className="mt-3 w-full" aria-label="Demo call recording" controls src={st.recordingUrl} />}
             </div>
           )}
         </div>

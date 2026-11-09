@@ -42,16 +42,18 @@ export function Sparkline({ calls, level }: { calls: Call[]; level: Level }) {
 
 /** Blood pressure chart with the home target and severe lines. */
 export function BPChart({ calls, height = 220 }: { calls: Call[]; height?: number }) {
+  if (!calls.length) return <p className="py-4 text-sm text-body">No check-ins have been recorded.</p>;
   const W = 640, H = height, L = 40, R = 44, T = 22, B = 28;
   const lo = 60, hi = 180;
   const days = calls.map((c) => c.day);
   const minD = Math.min(...days), maxD = Math.max(...days, minD + 1);
   const x = (d: number) => L + ((d - minD) / (maxD - minD)) * (W - L - R);
   const y = (v: number) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
-  const ans = calls.filter((c) => c.answered && c.sys);
+  const ans = calls.filter(c => c.answered && c.sys != null && c.dia != null);
   const line = (k: "sys" | "dia") => ans.map((c, i) => `${i ? "L" : "M"}${x(c.day)},${y(c[k]!)}`).join(" ");
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Blood pressure by day">
+    <div>
+    {ans.length > 0 ? <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Blood pressure by day. Exact values are available below.">
       {[80, 100, 120, 140, 160].map((v) => (
         <g key={v}>
           <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="#efeded" />
@@ -64,19 +66,33 @@ export function BPChart({ calls, height = 220 }: { calls: Call[]; height?: numbe
       <path d={line("sys")} fill="none" stroke="#0a2a4d" strokeWidth="2.5" strokeLinejoin="round" />
       <path d={line("dia")} fill="none" stroke="#0a2a4d" strokeWidth="2" strokeDasharray="1 0" opacity="0.4" strokeLinejoin="round" />
       {calls.map((c) =>
-        c.answered && c.sys ? (
+        c.answered && c.sys != null && c.dia != null ? (
           <g key={c.day}>
             <circle cx={x(c.day)} cy={y(c.sys)} r="4.5" fill={c.sys >= 160 ? "#b3261e" : c.sys >= 150 ? "#c48a00" : "#0a2a4d"} stroke="#fff" strokeWidth="2" />
             <circle cx={x(c.day)} cy={y(c.dia!)} r="3.5" fill="#fff" stroke="#0a2a4d" strokeOpacity="0.5" strokeWidth="1.5" />
             <text x={x(c.day)} y={y(c.sys) - 10} textAnchor="middle" fontSize="11" fontWeight="700" fill="#14161a">{c.sys}/{c.dia}</text>
           </g>
         ) : (
-          <text key={c.day} x={x(c.day)} y={y(120)} textAnchor="middle" fontSize="11" fill="#b3261e" fontWeight="600">missed</text>
+          <text key={c.day} x={x(c.day)} y={y(120)} textAnchor="middle" fontSize="11" fill="#b3261e" fontWeight="600">{c.answered ? "no BP" : "missed"}</text>
         ),
       )}
       {calls.map((c) => (
         <text key={"d" + c.day} x={x(c.day)} y={H - 8} textAnchor="middle" fontSize="11" fill="#55585f">Day {c.day}</text>
       ))}
-    </svg>
+    </svg> : <p className="py-4 text-sm text-body">No blood pressure readings were recorded in these check-ins.</p>}
+    <details className="mt-2 rounded-lg border border-line px-3 text-sm">
+      <summary className="flex min-h-11 cursor-pointer items-center font-semibold text-navy">Show readings by day</summary>
+      <table className="mb-3 w-full text-left text-sm">
+        <caption className="sr-only">Blood pressure readings by postpartum day</caption>
+        <thead className="text-xs text-body"><tr><th scope="col" className="py-1">Day</th><th scope="col">Blood pressure</th></tr></thead>
+        <tbody>{calls.map(call => (
+          <tr key={call.day} className="border-t border-line">
+            <th scope="row" className="py-1 font-medium">{call.day}</th>
+            <td>{!call.answered ? "Call missed" : call.sys != null && call.dia != null ? `${call.sys}/${call.dia} mmHg` : "No reading"}</td>
+          </tr>
+        ))}</tbody>
+      </table>
+    </details>
+    </div>
   );
 }

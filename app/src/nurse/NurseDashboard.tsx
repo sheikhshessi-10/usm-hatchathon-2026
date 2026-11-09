@@ -41,7 +41,7 @@ export default function NurseDashboard() {
   ).map(task => task.patientId));
 
   const shown = rows.filter(({ m, lvl }) => {
-    if (q && !`${m.name} ${m.county}`.toLowerCase().includes(q.toLowerCase())) return false;
+    if (!`${m.name} ${m.county} ${m.useCase ?? ""}`.toLowerCase().includes(q.trim().toLowerCase())) return false;
     if (filter === "act") return lvl === "red" || lvl === "red911";
     if (filter === "review") return lvl === "yellow";
     if (filter === "ok") return lvl === "green";
@@ -88,14 +88,12 @@ export default function NurseDashboard() {
             </div>
           </section>
 
-          <CallKpis />
-
           {/* Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
             <label className="relative w-full sm:w-auto">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-body" />
               <input
-                id="search" aria-label="Search nurse patients" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search moms or county..."
+                id="search" aria-label="Search nurse patients" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, county, or pathway"
                 className="h-11 w-full sm:w-64 rounded-full border border-line bg-white pl-9 pr-4 text-sm outline-none focus:border-navy/40"
               />
             </label>
@@ -109,7 +107,7 @@ export default function NurseDashboard() {
             ] as const).map(([k, label, n]) => (
               <button
                 key={k} aria-pressed={filter === k} onClick={() => setFilter(k)}
-                className={`inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors ${
+                className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors ${
                   filter === k ? "border-navy bg-navy text-white" : "border-line bg-white text-ink hover:bg-hover"
                 }`}
               >
@@ -128,7 +126,7 @@ export default function NurseDashboard() {
             {shown.map(({ m, s, lvl }) => (
               <button
                 key={m.id} onClick={() => setOpenId(m.id)}
-                className="group grid w-full grid-cols-[6px_1fr] md:grid-cols-[6px_1.6fr_1fr_1.4fr_1fr_120px] items-center gap-x-4 gap-y-2 border-b border-line px-5 py-4 text-left last:border-0 hover:bg-[#faf9f9] focus-visible:bg-hover focus-visible:outline-none"
+                className="group grid w-full grid-cols-[6px_1fr] md:grid-cols-[6px_1.6fr_1fr_1.4fr_1fr_120px] items-center gap-x-4 gap-y-2 border-b border-line px-5 py-4 text-left last:border-0 hover:bg-[#faf9f9] focus-visible:bg-hover focus-visible:outline-offset-[-3px]"
               >
                 <span className={`h-10 w-1.5 rounded-full self-center ${levelStyle[lvl].stripe} md:row-auto row-span-3`} />
                 <div className="min-w-0">
@@ -138,13 +136,13 @@ export default function NurseDashboard() {
                   <div className="text-[13px] text-body">Day {m.dayToday} · {m.useCase} · {m.county} County</div>
                 </div>
                 <div className="col-start-2 md:col-auto">
-                  {s.today?.answered ? (
+                  {s.today?.answered && s.today.sys != null && s.today.dia != null ? (
                     <div className="flex items-baseline gap-2">
                       <span className={`text-xl font-extrabold tabular-nums ${lvl === "green" ? "text-ink" : levelStyle[lvl].text}`}>{s.today.sys}/{s.today.dia}</span>
                       <span className="text-xs text-body">{s.today.time}</span>
                     </div>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber"><PhoneMissed size={15} /> No answer · {s.today?.attempts ?? 0} tries</span>
+                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber"><PhoneMissed size={15} aria-hidden="true" /> {s.today?.answered ? "No BP recorded" : s.today ? `No answer · ${s.today.attempts ?? 0} tries` : "No call recorded"}</span>
                   )}
                 </div>
                 <div className="col-start-2 md:col-auto flex flex-wrap gap-1.5">
@@ -164,8 +162,12 @@ export default function NurseDashboard() {
                 </span>
               </button>
             ))}
-            {!shown.length && <p className="px-5 py-10 text-center text-body">No moms match this filter.</p>}
+            {!shown.length && <div className="px-5 py-8 text-center text-sm text-body"><p>No patients match your search and filters.</p><button type="button" className="mt-2 min-h-11 font-bold text-navy underline" onClick={() => { setQ(""); setFilter("all"); }}>Clear search and filters</button></div>}
           </Card>
+          <details className="rounded-card border border-line bg-white p-5">
+            <summary className="cursor-pointer font-bold text-navy">Call operations metrics</summary>
+            <div className="mt-4"><CallKpis /></div>
+          </details>
           <details className="rounded-card border border-line bg-white p-5">
             <summary className="cursor-pointer font-bold text-navy">Continuity of care metrics</summary><a className="mt-1 inline-block text-sm font-semibold text-navy underline" href="#reports">Open charts, definitions, and exports</a>
             <p className="mt-1 text-xs text-body">Care completion and unresolved workflow gaps. Clinical severity remains separate from workflow acknowledgements.</p>
@@ -198,8 +200,8 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: "red
 }
 
 function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; onHandled: (id: string, note: string) => void }) {
-  const dialogRef=useRef<HTMLDivElement>(null);
-  useDialog(dialogRef,onClose);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useDialog(dialogRef);
   const s = status(mom);
   const lvl: Level = s.level;
   const [note, setNote] = useState(mom.nurseNote ?? "");
@@ -210,9 +212,11 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
   const doctorReviews = state.reviews.filter(r => r.patientId === mom.id);
 
   return (
-    <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label={`${mom.name} details`}>
-      <button className="absolute inset-0 bg-navy-900/30 backdrop-blur-[2px]" onClick={onClose} aria-label="Close" tabIndex={-1} />
-      <div className="relative flex h-full w-full max-w-[760px] flex-col overflow-y-auto bg-ground shadow-2xl">
+    <dialog ref={dialogRef} aria-label={`${mom.name} details`}
+      onCancel={(event) => { event.preventDefault(); onClose(); }}
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+      className="fixed inset-y-0 left-auto right-0 m-0 h-dvh max-h-none w-full max-w-[760px] overflow-hidden bg-ground text-ink shadow-2xl backdrop:bg-navy-900/40">
+      <div className="relative flex h-full w-full flex-col overflow-y-auto">
         <header className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#eeeded] bg-white/80 px-6 py-5 backdrop-blur-xl">
           <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -221,7 +225,7 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
             </div>
             <p className="text-sm text-body">{mom.age} · {mom.diagnosis} · {mom.delivery} · Day {mom.dayToday} of 10 · {mom.county} County</p>
           </div>
-          <button onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-line bg-white hover:bg-hover" aria-label="Close panel"><X size={18} /></button>
+          <button onClick={onClose} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line bg-white hover:bg-hover" aria-label="Close panel"><X size={18} /></button>
         </header>
 
         <div className="flex flex-col gap-5 p-6">
@@ -244,8 +248,8 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
 
           <Card className="p-5"><h3 className="font-bold">Doctor coordination</h3>
             <a href={`#doctor/${mom.id}`} className="mt-2 inline-block text-sm font-bold text-navy underline">Open doctor review for {mom.name}</a>
-            {doctorReviews.length ? doctorReviews.map((r,i)=><div key={i} className="mt-3 rounded-lg bg-ground p-3 text-sm"><b>{r.disposition}</b><p className="whitespace-pre-wrap">{r.note}</p></div>) : <p className="mt-2 text-sm text-body">Awaiting doctor assessment.</p>}
-            <ul className="mt-3 space-y-2">{state.tasks.filter(t=>t.patientId===mom.id).map(t=><li key={t.id} className="rounded-lg border border-line p-3 text-sm">{t.title}<p className="text-xs text-body">{t.owner} · due day {t.dueDay} · {t.completed ? "Completed" : "Pending"}</p><CareAction task={t} actor="Nurse"/></li>)}</ul>
+            {doctorReviews.length ? doctorReviews.map((r,i)=><div key={i} className="mt-3 rounded-lg bg-ground p-3 text-sm"><b>{r.disposition}</b><p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{r.note}</p></div>) : <p className="mt-2 text-sm text-body">Awaiting doctor assessment.</p>}
+            <ul className="mt-3 space-y-2">{state.tasks.filter(t=>t.patientId===mom.id).map(t=><li key={t.id} className="rounded-lg border border-line p-3 text-sm [overflow-wrap:anywhere]">{t.title}<p className="text-xs text-body">{t.owner} · due day {t.dueDay} · {t.completed ? "Completed" : "Pending"}</p><CareAction task={t} actor="Nurse"/></li>)}</ul>
           </Card>
           {/* Handle */}
           <Card className="p-5">
@@ -339,7 +343,7 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
           </details>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
 
