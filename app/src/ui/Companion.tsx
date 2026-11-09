@@ -19,17 +19,44 @@ export function Companion() {
   const dialog = useRef<HTMLDialogElement>(null);
   const launch = useRef<HTMLButtonElement>(null);
   const thread = useRef<HTMLDivElement>(null);
+  const [accessCode, setAccessCode] = useState("");
+  const [pending, setPending] = useState(false);
   const [draft, setDraft] = useState("");
   const [turns, setTurns] = useState<Array<{ question: string; reply: CompanionReply }>>([]);
   useEffect(() => {
     if (thread.current) thread.current.scrollTop = thread.current.scrollHeight;
   }, [turns]);
 
-  function send(message: string) {
+  async function send(message: string, topic?: "start" | "loops") {
     const question = message.trim();
-    if (!question) return;
-    setTurns(current => [...current.slice(-19), { question, reply: companionReply(question) }]);
+    if (!question || pending) return;
+    let reply = companionReply(question);
     setDraft("");
+
+    if (topic && accessCode.trim()) {
+      setPending(true);
+      try {
+        const response = await fetch("/api/guide", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessCode.trim()}`,
+          },
+          body: JSON.stringify({ topic }),
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!response.ok) throw new Error("Guide unavailable");
+        const result = await response.json();
+        if (typeof result.reply !== "string" || !result.reply.trim()) throw new Error("Empty reply");
+        reply = { ...reply, text: result.reply };
+      } catch {
+        reply = { ...reply, text: `Live guide unavailable. ${reply.text}` };
+      } finally {
+        setPending(false);
+      }
+    }
+
+    setTurns(current => [...current.slice(-19), { question, reply }]);
   }
 
   return (
@@ -58,15 +85,23 @@ export function Companion() {
             </div>
           ))}
         </div>
-        {!turns.length && <div className="flex flex-wrap gap-2 px-4 pb-3">
-          {companionTopics.map(topic => <button key={topic} type="button" onClick={() => send(topic)} className="rounded-full border border-[#ebd0dd] px-3 py-2 text-xs font-bold text-[#632e4e] hover:bg-[#fff4f8]">{topic}</button>)}
-        </div>}
+        <div className="flex flex-wrap gap-2 px-4 pb-3">
+          {companionTopics.map((topic, index) => <button key={topic} type="button" disabled={pending} onClick={() => send(topic, index === 0 ? "start" : index === 1 ? "loops" : undefined)} className="rounded-full border border-[#ebd0dd] px-3 py-2 text-xs font-bold text-[#632e4e] hover:bg-[#fff4f8]">{topic}</button>)}
+        </div>
         <form className="border-t border-line p-4" onSubmit={event => { event.preventDefault(); send(draft); }}>
           <div className="flex gap-2">
             <input aria-label="Message Pip" value={draft} onChange={event => setDraft(event.target.value)} maxLength={280} placeholder="Ask about the demo…" className="min-w-0 flex-1 rounded-xl border border-line px-3 text-base" />
-            <button type="submit" aria-label="Send to Pip" disabled={!draft.trim()} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#632e4e] text-white disabled:opacity-40"><Send size={17} /></button>
+            <button type="submit" aria-label="Send to Pip" disabled={pending || !draft.trim()} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#632e4e] text-white disabled:opacity-40"><Send size={17} /></button>
           </div>
-          <p className="mt-2 text-xs text-body">Scripted guide. Use fictional details only.</p>
+          <p className="mt-2 text-xs text-body" role="status">{pending ? "Getting an answer…" : "Typed messages stay in this browser."}</p>
+          <details className="mt-2 text-xs text-body">
+            <summary>Live guide access</summary>
+            <label className="mt-2 block">
+              Demo access code
+              <input type="password" value={accessCode} onChange={event => setAccessCode(event.target.value)} autoComplete="off" className="ml-2 rounded border border-line px-2 py-1" />
+            </label>
+            <p className="mt-1">With a code, the first two suggested topics can use the live model.</p>
+          </details>
         </form>
       </dialog>
     </>
