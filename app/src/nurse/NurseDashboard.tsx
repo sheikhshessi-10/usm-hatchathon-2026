@@ -242,7 +242,9 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
             </div>
           )}
 
-          <LiveCall mom={mom} />
+          {mom.id === "m1" ? <LiveCall mom={mom} /> : (
+            <a className="text-sm font-semibold text-navy underline" href="#nurse/m1">Open the live phone demo for Keisha</a>
+          )}
 
           <PatientCheckIn mom={mom} />
 

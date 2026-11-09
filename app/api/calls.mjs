@@ -10,10 +10,11 @@ export default async function handler(req, res) {
     const list = await r.json();
     if (!r.ok || !Array.isArray(list)) return res.status(502).json({ error: "Vapi lookup failed" });
     const calls = list
-      .filter((c) => c.assistant?.name === "CareBridge check-in")
+      .filter((c) => c.assistant?.name === "CareBridge check-in" || (process.env.VAPI_ASSISTANT_ID && c.assistantId === process.env.VAPI_ASSISTANT_ID))
       .map((c) => ({
         id: c.id,
-        momName: c.customer?.name ?? "Unknown",
+        direction: c.type ?? null,
+        momName: c.customer?.name ?? (c.type === "inboundPhoneCall" ? "Keisha Williams (demo call)" : "Unknown"),
         status: c.status,
         endedReason: c.endedReason ?? null,
         startedAt: c.startedAt ?? c.createdAt,

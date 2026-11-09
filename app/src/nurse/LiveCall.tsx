@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { PhoneCall, PhoneOff } from "lucide-react";
 import { evaluate, type CheckIn, type MomSymptom } from "../lib/rules";
 import type { Mom } from "../data/moms";
@@ -58,32 +58,38 @@ const STEP: Record<string, string> = { queued: "Dialing...", ringing: "Ringing..
 export function LiveCall({ mom }: { mom: Mom }) {
   const [callId, setCallId] = useState<string | null>(null);
   const [st, setSt] = useState<Status | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [confirming, setConfirming] = useState(false);
+  const [feedWarning, setFeedWarning] = useState(false);
   const [pollWarning, setPollWarning] = useState(false);
-  const timer = useRef<number>();
-  const launch = useRef<HTMLButtonElement>(null);
 
-  async function start() {
-    setConfirming(false);
-    setErr(null); setSt(null); setCallId(null); setPollWarning(false); setBusy(true);
-    try {
-      const r = await fetch("/api/call", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ momName: mom.name, babyName: mom.baby.name, day: mom.dayToday }) });
-      const j = await r.json();
-      if (!r.ok || typeof j.id !== "string" || !j.id) {
-        throw new Error(r.status === 503 ? "Live calling is unavailable on this deployment." : "The demo call could not be started.");
+  useEffect(() => {
+    let stop = false;
+    let timer: number;
+    async function findCall() {
+      try {
+        const response = await fetch("/api/calls");
+        if (!response.ok) throw new Error("Call feed unavailable");
+        const { calls } = await response.json() as { calls: { id: string; direction: string; startedAt: string }[] };
+        const cutoff = Date.now() - 10 * 60 * 1000;
+        const newest = calls.find(call => call.direction === "inboundPhoneCall" && Date.parse(call.startedAt) > cutoff);
+        if (!stop) {
+          setFeedWarning(false);
+          if (newest) setCallId(newest.id);
+        }
+      } catch {
+        if (!stop) setFeedWarning(true);
       }
-      setCallId(j.id);
-    } catch (error) {
-      setErr(error instanceof Error && error.message.startsWith("Live calling") ? error.message : "The demo call could not be started. Try again.");
-      setBusy(false);
+      if (!stop) timer = window.setTimeout(findCall, 4000);
     }
-  }
+    findCall();
+    return () => { stop = true; window.clearTimeout(timer); };
+  }, []);
 
   useEffect(() => {
     if (!callId) return;
     let stop = false;
+    let timer: number;
+    setSt(null);
+    setPollWarning(false);
     const tick = async () => {
       try {
         const r = await fetch(`/api/call-status?id=${callId}`);
@@ -92,16 +98,17 @@ export function LiveCall({ mom }: { mom: Mom }) {
         if (stop) return;
         setSt(j);
         setPollWarning(false);
-        if (j.status === "ended" && (j.data || j.summary || j.endedReason)) setBusy(false);
-        else timer.current = window.setTimeout(tick, 2500);
+        if (j.status !== "ended" || !(j.data || j.summary || j.endedReason)) {
+          timer = window.setTimeout(tick, 2500);
+        }
       } catch {
         if (stop) return;
         setPollWarning(true);
-        timer.current = window.setTimeout(tick, 4000);
+        timer = window.setTimeout(tick, 4000);
       }
     };
     tick();
-    return () => { stop = true; window.clearTimeout(timer.current); };
+    return () => { stop = true; window.clearTimeout(timer); };
   }, [callId]);
 
   const ended = st?.status === "ended";
@@ -109,47 +116,37 @@ export function LiveCall({ mom }: { mom: Mom }) {
   const spoken = ended ? st.messages.filter(message => message.role === "mom").map(message => message.text).join(" ").trim() : "";
   const data = ended && !unreached ? readCallAnswers(st.data, spoken) : null;
   const result = data ? evaluate(toCheckIn(data, mom.dayToday)) : null;
-  const first = mom.name.split(" ")[0];
+  const waitingForAnswers = ended && !(st.data || st.summary || st.endedReason);
 
   return (
     <Card className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-bold">Live demo phone call</h3>
-          <p className="text-sm text-body">Aven calls the configured demo phone using this fictional profile. Open the outreach protocols for the simulated escalation walkthrough.</p>
+          <h3 className="font-bold">Live demo phone line</h3>
+          <p className="mt-1 text-sm text-body">Call in to play the fictional patient. This panel follows the most recent incoming demo call.</p>
         </div>
-        <button ref={launch} type="button" onClick={() => setConfirming(true)} disabled={busy || confirming} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy disabled:opacity-60">
-          <PhoneCall size={16} aria-hidden="true" /> {busy ? "Call in progress" : "Start demo phone call"}
-        </button>
+        <a href="tel:+16012305710" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy">
+          <PhoneCall size={16} aria-hidden="true" /> Call (601) 230-5710
+        </a>
       </div>
-
-      {confirming && <div className="mt-3 rounded-lg border border-line p-3 text-sm">
-        <p>This will ring the configured demo phone. Make sure the recipient is expecting the call.</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <button type="button" className="min-h-11 rounded-lg bg-navy px-3 font-bold text-white" onClick={start}>Call demo phone</button>
-          <button type="button" autoFocus className="min-h-11 rounded-lg border border-line px-3 font-semibold" onClick={() => {
-            setConfirming(false);
-            requestAnimationFrame(() => launch.current?.focus());
-          }}>Cancel</button>
-        </div>
-      </div>}
-      {err && <p role="alert" className="mt-3 rounded-xl bg-red-soft px-4 py-3 text-sm text-red">{err}</p>}
+      {feedWarning && <p role="status" className="mt-3 text-sm text-body">The incoming call feed is temporarily unavailable. Checking again…</p>}
+      {!callId && !feedWarning && <p role="status" className="mt-3 text-sm text-body">Waiting for an incoming demo call.</p>}
 
       {callId && (
         <div className="mt-4 flex flex-col gap-3">
           <div role="status" className="flex items-center gap-2 text-sm font-semibold text-navy">
             {ended ? <PhoneOff size={15} /> : <span className="h-2 w-2 animate-pulse rounded-full bg-green" />}
-            {STEP[st?.status ?? "queued"] ?? st?.status}
-            {ended && busy && " · waiting for answers"}
+            {st ? STEP[st.status] ?? st.status : "Connecting to call transcript"}
+            {waitingForAnswers && " · waiting for answers"}
           </div>
 
           {pollWarning && <p role="status" className="text-sm text-body">Call status is temporarily unavailable. Checking again…</p>}
-          {ended && !busy && !result && <p className="text-sm text-body">{unreached ? "No patient was reached on this call." : "The call ended without enough patient responses to show a result."}</p>}
+          {ended && !waitingForAnswers && !result && <p className="text-sm text-body">{unreached ? "No patient was reached on this call." : "The call ended without enough patient responses to show a result."}</p>}
 
           {st && st.messages.length > 0 && (
             <div role="region" aria-label="Live call transcript" tabIndex={0} className="max-h-64 overflow-y-auto rounded-xl bg-ground p-3 text-sm [overflow-wrap:anywhere]">
               {st.messages.map((m, i) => (
-                <p key={i} className="py-1"><b className={m.role === "ai" ? "text-navy" : "text-ink"}>{m.role === "ai" ? "Aven: " : `${first}: `}</b>{m.text}</p>
+                <p key={i} className="py-1"><b className={m.role === "ai" ? "text-navy" : "text-ink"}>{m.role === "ai" ? "Aven: " : "Caller: "}</b>{m.text}</p>
               ))}
             </div>
           )}
