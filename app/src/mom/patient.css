@@ -3,6 +3,7 @@
   --patient-muted: #665466;
   --patient-accent: #853455;
   --patient-border: #eedfe8;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--patient-ink);
   background: #f9f7f8;
   min-height: 100vh;
@@ -28,43 +29,34 @@
   border: 1px solid var(--patient-border); border-radius: .8rem; background: #fff;
 }
 
+
 .patient-hero {
-  position: relative; isolation: isolate; overflow: hidden;
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  min-height: 10rem; padding: clamp(1.15rem, 4vw, 2rem);
-  border: 1px solid #eedfe8; border-radius: 1.2rem;
-  background: #fff;
+  display: flex; align-items: end; justify-content: space-between; gap: 1.5rem;
+  padding: 1.5rem 0 1.35rem; border-bottom: 1px solid #ded7dc;
 }
 .patient-hero-copy { min-width: 0; }
 .patient-hero h1 {
-  font-size: clamp(2rem, 5vw, 3rem); line-height: 1.02;
-  font-weight: 800; letter-spacing: -.04em; margin-block: .5rem .65rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.1rem, 4vw, 3.1rem); line-height: 1.08;
+  font-weight: 400; letter-spacing: -.025em; margin-block: .4rem .45rem;
 }
-.patient-hero-copy > p:last-child { color: #57354d; max-width: 26rem; font-size: clamp(.9rem, 2vw, 1.08rem); }
-
-.patient-orbit {
-  position: relative; flex: 0 0 auto; display: grid; place-items: center;
-  width: clamp(6rem, 20vw, 10rem); aspect-ratio: 1; border-radius: 50%;
-  background: #faf4f7;
-}
-.patient-orbit svg:first-child { position: absolute; inset: 0; width: 100%; transform: rotate(-90deg); }
-.patient-orbit circle { fill: none; stroke-width: 6; }
-.patient-orbit-track { stroke: #e7d1e7; }
-.patient-orbit-fill { stroke: #9e426e; stroke-linecap: round; }
-.patient-orbit > div { display: grid; justify-items: center; gap: .12rem; line-height: 1; }
-.patient-orbit span, .patient-orbit small { font-size: .69rem; font-weight: 800; color: #754161; }
-.patient-orbit strong { font-size: clamp(1.8rem, 5vw, 3.15rem); letter-spacing: -.07em; }
+.patient-hero-copy > p:last-child { color: var(--patient-muted); max-width: 30rem; font-size: .95rem; }
+.patient-day { display: grid; gap: .15rem; min-width: 8rem; padding-left: 1rem; border-left: 1px solid #ded7dc; }
+.patient-day span { font-size: .64rem; letter-spacing: .08em; font-weight: 700; color: var(--patient-muted); }
+.patient-day strong { font-size: 1.1rem; font-weight: 650; }
+.patient-day small { color: var(--patient-muted); font-size: .76rem; }
 
 .patient-nav {
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .25rem;
-  background: #ffffffc9; border: 1px solid var(--patient-border); border-radius: 1.2rem;
-  padding: .3rem; margin-block: .9rem;
+  border-bottom: 1px solid #ded7dc;
+  padding: 0; margin-block: 0 1.25rem;
 }
 .patient-nav button {
   display: flex; align-items: center; justify-content: center; gap: .45rem;
-  min-height: 2.85rem; border-radius: .9rem; color: #674b64; font-size: .85rem; font-weight: 750;
+  min-height: 3rem; border-radius: 0; border-bottom: 2px solid transparent; color: #674b64; font-size: .86rem; font-weight: 600;
 }
-.patient-nav button:hover, .patient-nav button[aria-pressed="true"] { background: #f7e7f1; color: #78284f; }
+.patient-nav button:hover { color: #78284f; }
+.patient-nav button[aria-pressed="true"] { border-bottom-color: #853455; color: #78284f; }
 
 .patient-notice {
   display: flex; align-items: flex-start; flex-wrap: wrap; gap: .65rem;
@@ -82,16 +74,15 @@
 .patient-grid[hidden] { display: none; }
 .patient-card {
   min-width: 0; padding: clamp(1rem, 3vw, 1.65rem); background: #fff;
-  border: 1px solid var(--patient-border); border-radius: 1rem;
-  box-shadow: 0 9px 26px #54325008;
+  border: 1px solid var(--patient-border); border-radius: .5rem;
 }
 .patient-kicker {
   display: flex; align-items: center; gap: .35rem;
-  font-size: .69rem; font-weight: 800; text-transform: uppercase; letter-spacing: .095em;
+  font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
   color: #833957;
 }
 .patient-kicker svg { flex-shrink: 0; }
-.patient-card h2 { margin-top: .42rem; font-size: clamp(1.28rem, 3vw, 1.8rem); line-height: 1.15; letter-spacing: -.04em; font-weight: 800; }
+.patient-card h2 { margin-top: .42rem; font-size: clamp(1.28rem, 3vw, 1.8rem); line-height: 1.15; letter-spacing: -.025em; font-weight: 650; }
 .patient-muted { color: var(--patient-muted); font-size: .92rem; margin-top: .45rem; }
 .patient-feelings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; margin-block: 1rem; }
 .patient-feelings button {
@@ -126,7 +117,8 @@
   color: var(--patient-accent); font-size: .86rem; font-weight: 800; text-align: left;
 }
 .patient-link:hover { text-decoration: underline; }
-.patient-journey { grid-column: 1 / -1; }
+.patient-today .patient-next { grid-column: 1; grid-row: 1; }
+.patient-today .patient-journey { grid-column: 1 / -1; }
 .patient-days {
   display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: .15rem;
   max-width: 36rem; margin-top: .9rem; list-style: none;
@@ -150,7 +142,9 @@
 @media (max-width: 640px) {
   .patient-grid { grid-template-columns: minmax(0, 1fr); }
   .patient-nav button { flex-direction: column; gap: .22rem; font-size: .73rem; padding: .3rem .1rem; min-height: 3.2rem; }
-  .patient-hero { min-height: 9rem; }
+  .patient-hero { align-items: start; }
+  .patient-today .patient-next { grid-column: auto; grid-row: 1; }
+  .patient-today .patient-journey { grid-column: auto; }
 }
 @media (max-width: 380px) {
   .patient-portal { padding-inline: .8rem; }
