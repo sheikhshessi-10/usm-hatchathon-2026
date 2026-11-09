@@ -41,7 +41,7 @@ export default function DoctorDashboard() {
         <Metric label="Overdue care actions" value={String(k.overdue)} detail="Incomplete actions past their due postpartum day" />
         <Metric label="Restored contact documented" value={rate(k.contactRestored,k.missed)} detail={`${k.contactRestored}/${k.missed} unreached patients with explicitly documented restored contact`} />
       </section>
-      <Card className="p-4 text-sm"><b>Continuity coverage:</b> {k.reviewed}/{k.enrolled} patients have a documented doctor review. {k.handoffsPending} handoffs await receiving-role acceptance. {k.handoffsAccepted}/{k.handoffRequests} assigned actions accepted; {k.handoffsClosed}/{k.handoffRequests} accepted actions completed. Review dispositions alone do not create or close a handoff. Clinical recovery, readmissions prevented, and time to response are not measured by this demo.</Card>
+      <Card className="p-4 text-sm"><b>Continuity coverage:</b> {k.reviewed}/{k.enrolled} patients have a documented doctor review. {k.handoffsPending} handoffs await receiving-role acceptance. {k.handoffsAccepted}/{k.handoffRequests} assigned actions accepted; {k.handoffsClosed}/{k.handoffRequests} assigned actions accepted and completed. Review dispositions alone do not create or close a handoff. Clinical recovery, readmissions prevented, and time to response are not measured by this demo.</Card>
       <div className="grid items-start gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
         <Card className="overflow-hidden">
           <div className="space-y-3 border-b border-line p-4">

@@ -17,12 +17,12 @@ CDC PRAMS 2022 aggregate tables supply three contextual estimates: postpartum ch
 - Overdue actions: incomplete actions with due day before current postpartum day. Due today is a separate inventory category.
 - Restored contact: initially unreached selected patients whose latest explicit contact outcome is reached / initially unreached selected patients.
 - Handoff acceptance: explicitly accepted doctor-assigned care actions / doctor-assigned care actions.
-- Accepted handoffs completed: doctor-assigned actions both accepted and completed / doctor-assigned actions.
+- Assigned handoffs accepted and completed: doctor-assigned actions both accepted and completed / doctor-assigned actions.
 - Review coverage: unique selected patients reviewed / selected patients.
 
 No denominator means N/A, not zero performance. Milestones have independent eligibility and are not a nested funnel. The care-action inventory reconciles completed, overdue, due-today, and future actions. Recorded outreach is plotted by actual modeled calendar dates derived from delivery plus postpartum day; unrecorded historical schedules are not imputed. A daily bar's label is answered / recorded scheduled call-days, not attempts or unique people across all days.
 
-The report is a fixed synthetic snapshot. No causal improvement, avoided readmission, mortality reduction, treatment success, time-to-response SLA, or population-representative outcome is inferred. A 15-case enriched demo cannot establish clinical effectiveness.
+The scenario date is fixed. Browser-local reviews and actions reflect the current session and are not a historical as-of snapshot. Latest check-in coverage uses only patients with a recorded check-in, and restored contact uses patients whose latest recorded check-in was missed. No causal improvement, avoided readmission, mortality reduction, treatment success, time-to-response SLA, or population-representative outcome is inferred. A 15-case enriched demo cannot establish clinical effectiveness.
 
 ## Validation
 

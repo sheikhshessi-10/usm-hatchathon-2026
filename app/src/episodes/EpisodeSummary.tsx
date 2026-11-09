@@ -35,7 +35,7 @@ export function EpisodeSummary() {
           <dd className="text-2xl font-bold">{k.evidencePending}</dd>
         </div>
         <div>
-          <dt className="text-xs text-body">Ended conversations</dt>
+          <dt className="text-xs text-body">Sessions ended</dt>
           <dd className="text-2xl font-bold">
             {k.ended}/{k.conversations}
           </dd>
