@@ -82,7 +82,7 @@ export const structuredSchema = {
   },
 };
 
-export const VOICE = { provider: "vapi", voiceId: "Paige" };
+export const VOICE = { provider: "vapi", voiceId: "Leah" };
 
 export function assistant(ctx) {
   const first = ctx.momName.split(" ")[0];
