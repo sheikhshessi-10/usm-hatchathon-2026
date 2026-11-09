@@ -26,9 +26,9 @@ export default function ProtocolsDashboard() {
       <div className="protocol-shell">
         <header className="protocol-hero">
           <div>
-            <p className="protocol-kicker"><HeartPulse size={17} aria-hidden="true" /> CareBridge · Outreach demo</p>
+            <p className="protocol-kicker"><HeartPulse size={17} aria-hidden="true" /> AVENLYTH · Outreach demo</p>
             <h1>Outreach &amp; escalation</h1>
-            <p>Follow one fictional postpartum check-in across phone, text, and the AI agent. Switch scenarios to see what changes when a patient reports an urgent warning sign.</p>
+            <p>Follow one fictional postpartum check-in across phone, text, and Aven. Switch scenarios to see what changes when a patient reports an urgent warning sign.</p>
           </div>
           <a href="#episodes">Open Care Loops <ArrowRight size={16} aria-hidden="true" /></a>
         </header>
@@ -49,7 +49,7 @@ export default function ProtocolsDashboard() {
             {urgent ? <ShieldAlert size={23} aria-hidden="true" /> : <ClipboardList size={23} aria-hidden="true" />}
             <div>
               <h2 id="path-title">{urgent ? "Stop the routine check-in" : "Check in and find a time that works"}</h2>
-              <p>{urgent ? "In this sample, the patient reports chest pain and trouble breathing. The assistant stops the check-in and tells Maya to call 911 right away. The demo queues staff review in parallel." : "Maya talks through her prescribed medicine, how her pain has changed, and when she can come in. The sample appointment is booked while follow-up stays open."}</p>
+              <p>{urgent ? "In this sample, the patient reports chest pain and trouble breathing. Aven stops the check-in and tells Maya to call 911 right away. The demo queues staff review in parallel." : "Maya talks through her prescribed medicine, how her pain has changed, and when she can come in. The sample appointment is booked while follow-up stays open."}</p>
             </div>
           </div>
           <ol>
@@ -89,19 +89,19 @@ export default function ProtocolsDashboard() {
                 <div className={`protocol-conversation protocol-conversation--${channel.id}`}>
                   <div className="protocol-conversation-bar">
                     <Icon size={17} aria-hidden="true" />
-                    <div><strong>{channel.id === "voice" ? result.patient.name : "CareBridge"}</strong><small>{channel.id === "voice" ? "Simulated outbound call" : channel.id === "sms" ? "Simulated text thread" : "Simulated portal assistant"}</small></div>
+                    <div><strong>{channel.id === "voice" ? result.patient.name : "Aven"}</strong><small>{channel.id === "voice" ? "Simulated outbound call" : channel.id === "sms" ? "Simulated text thread" : "Simulated portal chat"}</small></div>
                   </div>
                   <p className="protocol-chat-meta"><LockKeyhole size={12} aria-hidden="true" /> Demo consent and identity confirmed</p>
                   <ol className="protocol-messages" tabIndex={0} aria-label={`${channel.title} sample conversation`}>
                     {result.messages.map((message, index) => (
                       <li key={index} data-speaker={message.who}>
-                        <span className="protocol-speaker">{message.who === "patient" ? result.patient.name : "CareBridge"}{channel.id === "voice" && <> · <time dateTime={message.at}>{time.format(new Date(message.at))}</time></>}</span>
+                        <span className="protocol-speaker">{message.who === "patient" ? result.patient.name : "Aven"}{channel.id === "voice" && <> · <time dateTime={message.at}>{time.format(new Date(message.at))}</time></>}</span>
                         <p>{message.text}</p>
                       </li>
                     ))}
                   </ol>
                   {channel.id !== "voice" && <div className="protocol-compose" aria-hidden="true">
-                    <span>{channel.id === "sms" ? "Text message" : "Message CareBridge"} · preview</span><Send size={15} />
+                    <span>{channel.id === "sms" ? "Text message" : "Message Aven"} · preview</span><Send size={15} />
                   </div>}
                 </div>
                 <div className="protocol-result" data-urgent={urgent}>

@@ -29,7 +29,7 @@ export default function DoctorDashboard() {
   return <main className="min-h-screen bg-ground px-4 pb-12 pt-6 text-ink sm:px-8">
     <div className="mx-auto max-w-7xl space-y-6">
       <header className="rounded-card bg-navy p-6 text-white sm:p-8">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gold"><Stethoscope size={16}/> CareBridge · Clinical workspace</div>
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gold"><Stethoscope size={16}/> AVENLYTH · Clinical workspace</div>
         <h1 className="mt-3 text-3xl font-extrabold tracking-tight">Doctor portal</h1>
         <p className="mt-2 max-w-2xl text-white/80">Close the gaps between discharge, outreach, clinical review, and the next care team.</p>
         <a className="mt-3 inline-block text-sm font-bold text-gold underline" href="#reports">Open charts and reporting</a>

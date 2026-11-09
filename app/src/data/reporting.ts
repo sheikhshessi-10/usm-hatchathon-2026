@@ -44,7 +44,7 @@ export function reportSnapshot(moms: Mom[], state: Workflow) {
   return { asOf:DEMO_AS_OF,dataType:"Synthetic workflow with open-data-derived baseline anchors",metrics:k,milestones,
     outreach:[...dates.values()].sort((a,b)=>a.date.localeCompare(b.date)),patients:patientRows,
     referenceSources:OPEN_DATA,
-    limitations:["Selected demonstration cases, not a representative population sample.","Scenario date is fixed; workflow updates reflect the current browser session, not a historical as-of snapshot.","UCI pregnancy observations are from rural Bangladesh; demographic and BP values are adapted to fictional scenarios, not real US postpartum histories.","PRAMS 2022 population benchmarks are separate from first-ten-day workflow KPIs and cannot establish CareBridge effectiveness.","No causal effect, clinical recovery, mortality benefit, or readmissions prevented is measured."],
+    limitations:["Selected demonstration cases, not a representative population sample.","Scenario date is fixed; workflow updates reflect the current browser session, not a historical as-of snapshot.","UCI pregnancy observations are from rural Bangladesh; demographic and BP values are adapted to fictional scenarios, not real US postpartum histories.","PRAMS 2022 population benchmarks are separate from first-ten-day workflow KPIs and cannot establish AVENLYTH effectiveness.","No causal effect, clinical recovery, mortality benefit, or readmissions prevented is measured."],
   };
 }
 // Prefix formula-like strings before quoting so spreadsheet programs do not execute cells.

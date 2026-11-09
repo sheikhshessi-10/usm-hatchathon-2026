@@ -99,7 +99,7 @@ export default function EpisodesDashboard() {
       <div className="mx-auto max-w-7xl space-y-5">
         <header className="rounded-card bg-navy p-6 text-white sm:p-8">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gold">
-            <ShieldCheck size={16} /> CareBridge · Verified follow-up engine
+            <ShieldCheck size={16} /> AVENLYTH · Verified follow-up engine
           </div>
           <h1 className="mt-3 text-3xl font-extrabold">
             From patient report to verified care
@@ -262,7 +262,7 @@ export default function EpisodesDashboard() {
                         <b className="text-xs">
                           {m.who === "patient"
                             ? "Patient report"
-                            : "Scripted assistant"}
+                            : "Aven"}
                         </b>
                         <p className="mt-1 whitespace-pre-wrap break-words">
                           {m.text}
@@ -735,7 +735,7 @@ export default function EpisodesDashboard() {
               );
               const a = document.createElement("a");
               a.href = u;
-              a.download = "carebridge-verified-episode-demo.json";
+              a.download = "avenlyth-verified-episode-demo.json";
               a.click();
               setTimeout(() => URL.revokeObjectURL(u), 1000);
             }}
