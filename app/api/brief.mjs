@@ -20,14 +20,16 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const momName = String(req.body?.momName || "").trim().slice(0, 60);
-  const babyName = String(req.body?.babyName || "your baby").trim().slice(0, 40);
+  const rawBaby = String(req.body?.babyName || "").trim().slice(0, 40);
+  // Sample babies are named like "Baby boy Williams"; say "your little one" instead.
+  const babyName = !rawBaby || /^baby (boy|girl)/i.test(rawBaby) ? "your little one" : rawBaby;
   const day = Math.max(1, Math.min(10, Number(req.body?.day) || 5));
   const background = String(req.body?.document || "").slice(0, 12000);
   if (!momName) return res.status(400).json({ error: "Patient name is required." });
 
   const first = momName.split(" ")[0];
   const a = assistant({ momName, babyName, day, background });
-  a.firstMessage = `Hey ${first}! It's Aven, from your care team over at Forrest General. Thanks so much for calling in. How're you and little ${babyName} doing today?`;
+  a.firstMessage = `Hey ${first}! It's Aven, from your care team over at Forrest General. Thanks so much for calling in. How're you and ${babyName} doing today?`;
   a.metadata = { momName, babyName, day, loadedAt: new Date().toISOString(), chars: background.length };
   try {
     let r = await fetch(`${VAPI}/assistant/${id}`, { method: "PATCH", headers: auth, body: JSON.stringify(a) });

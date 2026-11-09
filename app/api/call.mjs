@@ -12,7 +12,8 @@ export default async function handler(req, res) {
   if (!key || !to) return res.status(503).json({ error: "Live calling is not set up yet." });
 
   const momName = String(req.body?.momName || "Keisha Williams").slice(0, 60);
-  const babyName = String(req.body?.babyName || "your baby").slice(0, 40);
+  const rawBaby = String(req.body?.babyName || "").trim().slice(0, 40);
+  const babyName = !rawBaby || /^baby (boy|girl)/i.test(rawBaby) ? "your little one" : rawBaby;
   const day = Math.max(1, Math.min(10, Number(req.body?.day) || 5));
   const auth = { authorization: `Bearer ${key}`, "content-type": "application/json" };
 
@@ -27,7 +28,7 @@ export default async function handler(req, res) {
     const assistantId = process.env.VAPI_ASSISTANT_ID;
     // Use the saved assistant, which carries the patient file loaded from the nurse screen.
     const body = assistantId
-      ? { phoneNumberId, assistantId, customer: { number: to, name: momName }, assistantOverrides: { firstMessage: `Hey ${first}! It's Aven, from your care team over at Forrest General. How're you and little ${babyName} doing today? You got a few minutes for a quick check-in?` } }
+      ? { phoneNumberId, assistantId, customer: { number: to, name: momName }, assistantOverrides: { firstMessage: `Hey ${first}! It's Aven, from your care team over at Forrest General. How're you and ${babyName} doing today? You got a few minutes for a quick check-in?` } }
       : { phoneNumberId, customer: { number: to, name: momName }, assistant: assistant({ momName, babyName, day }) };
     const r = await fetch(`${VAPI}/call`, { method: "POST", headers: auth, body: JSON.stringify(body) });
     const data = await r.json();
