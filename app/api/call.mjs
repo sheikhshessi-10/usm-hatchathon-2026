@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     const assistantId = process.env.VAPI_ASSISTANT_ID;
     // Use the saved assistant, which carries the patient file loaded from the nurse screen.
     const body = assistantId
-      ? { phoneNumberId, assistantId, customer: { number: to, name: momName }, assistantOverrides: { firstMessage: `Hi ${first}, this is Aven from your care team at Forrest General, calling for your daily check-in. Is now an okay time for a quick, gentle check-in on you and ${babyName}?` } }
+      ? { phoneNumberId, assistantId, customer: { number: to, name: momName }, assistantOverrides: { firstMessage: `Hey ${first}! It's Aven, from your care team over at Forrest General. How're you and little ${babyName} doing today? You got a few minutes for a quick check-in?` } }
       : { phoneNumberId, customer: { number: to, name: momName }, assistant: assistant({ momName, babyName, day }) };
     const r = await fetch(`${VAPI}/call`, { method: "POST", headers: auth, body: JSON.stringify(body) });
     const data = await r.json();

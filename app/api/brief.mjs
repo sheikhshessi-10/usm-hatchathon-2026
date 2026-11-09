@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
   const first = momName.split(" ")[0];
   const a = assistant({ momName, babyName, day, background });
-  a.firstMessage = `Hi ${first}, this is Aven from your care team at Forrest General. Thank you so much for calling in. Is now an okay time for a quick, gentle check-in on you and ${babyName}?`;
+  a.firstMessage = `Hey ${first}! It's Aven, from your care team over at Forrest General. Thanks so much for calling in. How're you and little ${babyName} doing today?`;
   a.metadata = { momName, babyName, day, loadedAt: new Date().toISOString(), chars: background.length };
   try {
     let r = await fetch(`${VAPI}/assistant/${id}`, { method: "PATCH", headers: auth, body: JSON.stringify(a) });
