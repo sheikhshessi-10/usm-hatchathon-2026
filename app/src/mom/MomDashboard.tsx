@@ -23,7 +23,7 @@ export default function MomDashboard() {
     s.level === "green" ? "bg-green-soft ring-green/25 text-green" : s.level === "yellow" ? "bg-amber-soft ring-amber/30 text-amber" : "bg-red text-white ring-red";
 
   return (
-    <div className="min-h-screen bg-ground text-ink">
+    <main className="min-h-screen bg-ground text-ink">
       <div className="mx-auto flex max-w-[440px] flex-col gap-4 px-4 pb-12 pt-16">
         <label className="flex items-center justify-between gap-2 text-xs text-body">
           <span>Demo: viewing as</span>
@@ -109,14 +109,14 @@ export default function MomDashboard() {
           <div className="flex items-center gap-2 text-sm font-bold text-navy"><LifeBuoy size={16} /> Your care team</div>
           <div className="mt-3 flex flex-col gap-3 text-[15px]">
             <div className="flex items-center justify-between"><span>Nurse Taylor, Forrest General</span><span className="font-semibold tabular-nums">(601) 555-0100</span></div>
-            <div className="flex items-center justify-between"><span>Next call</span><span className="font-semibold">Tomorrow, 9:00 AM</span></div>
+            <div className="flex items-center justify-between"><span>Next call</span><span className="font-semibold">{mom.dayToday >= 10 ? "Ten-day demo plan ended" : "Demo cadence: next day, 9 AM"}</span></div>
             <div className="flex items-center justify-between"><span className="flex items-center gap-1.5"><CalendarDays size={15} /> Next visit</span><span className="font-semibold text-right">{mom.visit}</span></div>
             <div className="flex items-center justify-between"><span>Medicine</span><span className="font-semibold text-right">{mom.meds.join(", ") || "None"}</span></div>
           </div>
         </Card>
       </div>
 
-    </div>
+    </main>
   );
 }
 

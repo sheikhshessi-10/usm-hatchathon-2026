@@ -33,6 +33,9 @@ describe("source-backed reporting",()=>{
   it("exports auditable cohort rows and neutralizes spreadsheet formula prefixes",()=>{
     expect(cohortCsv(reportSnapshot(MOMS,initialWorkflow())).split("\r\n")).toHaveLength(16);
     expect(csvCell('=1+1')).toBe('"\'=1+1"');
+    for (const prefix of ["\t", "\r", "\n", "  +", "-", "@"]) {
+      expect(csvCell(prefix + "payload")).toBe(`"'${prefix}payload"`);
+    }
     expect(csvCell('a,"b"')).toBe('"a,""b"""');
   });
 });

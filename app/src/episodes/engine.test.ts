@@ -234,3 +234,42 @@ describe("verified care-loop policy", () => {
     ).toBe(false);
   });
 });
+
+describe("release event integrity", () => {
+  const event: Event = {
+    id: "integrity",
+    episodeId: "episode-pp",
+    actor: staff,
+    at: "2026-11-08T20:00:00Z",
+    command: { type: "confirm_identity" },
+    protocolVersion: "demo-1.0",
+  };
+
+  it("rejects an unsupported version and treats replay as idempotent", () => {
+    const invalid = applyEvent(seedEpisodes(), { ...event, protocolVersion: "demo-2.0" });
+    expect(invalid.audit.slice(-1)[0]).toMatchObject({ allowed: false, reason: "Unknown protocol version" });
+    expect(invalid.patients[0].identityConfirmed).toBe(false);
+    const state = applyEvent(seedEpisodes(), event);
+    expect(applyEvent(state, event)).toBe(state);
+  });
+
+  it("keeps the chronology of accepted events after backdated attempts", () => {
+    const state = applyEvent(seedEpisodes(), event);
+    const early = { ...event, id: "early", at: "2026-11-08T19:00:00Z" };
+    const rejected = applyEvent(state, early);
+    expect(rejected.audit.slice(-1)[0]).toMatchObject({ allowed: false, reason: "Out-of-order event timestamp" });
+    expect(applyEvent(rejected, { ...early, id: "early-2" }).audit.slice(-1)[0]?.allowed).toBe(false);
+  });
+
+  it("rejects fixture evidence recorded before the episode order", () => {
+    const state = applyEvent(seedEpisodes(), event);
+    state.episodes[0].orderedAt = "2026-11-08T14:00:00Z";
+    const rejected = applyEvent(state, {
+      ...event,
+      id: "pre-order-evidence",
+      command: { type: "receive_evidence", evidenceId: "lab-postpartum-final" },
+    });
+    expect(rejected.audit.slice(-1)[0]?.allowed).toBe(false);
+    expect(rejected.episodes[0].evidenceId).toBeUndefined();
+  });
+});

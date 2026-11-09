@@ -48,7 +48,7 @@ export function reportSnapshot(moms: Mom[], state: Workflow) {
 }
 // Prefix formula-like strings before quoting so spreadsheet programs do not execute cells.
 export function csvCell(value: unknown): string {
-  let s=String(value??""); if (/^[\s]*[=+\-@]/.test(s)) s="'"+s;
+  let s=String(value??""); if (/^(?:[\t\r\n]|\s*[=+\-@])/.test(s)) s="'"+s;
   return '"'+s.replace(/"/g,'""')+'"';
 }
 export function cohortCsv(snapshot: ReturnType<typeof reportSnapshot>): string {

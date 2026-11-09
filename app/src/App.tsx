@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { ErrorBoundary } from "./ui/ErrorBoundary";
+import { StorageNotice, BuildStatus } from "./ui/ReleaseStatus";
 import NurseDashboard from "./nurse/NurseDashboard";
 import MomDashboard from "./mom/MomDashboard";
 
@@ -19,16 +21,18 @@ export default function App() {
   }, []);
 
   return (
-    <EpisodeProvider><CareProvider>
-      <div className="fixed left-4 right-4 top-4 z-30 ml-auto flex w-fit max-w-[calc(100%-2rem)] overflow-x-auto rounded-full print:hidden border border-line bg-white/85 p-1 text-xs font-semibold shadow-sm backdrop-blur">
+    <ErrorBoundary><EpisodeProvider><CareProvider>
+      <StorageNotice/>
+      <nav aria-label="CareBridge navigation" className="fixed left-4 right-4 top-4 z-30 ml-auto flex w-fit max-w-[calc(100%-2rem)] overflow-x-auto rounded-full print:hidden border border-line bg-white/85 p-1 text-xs font-semibold shadow-sm backdrop-blur">
         {(["nurse", "doctor", "mom", "reports", "episodes"] as const).map((v) => (
-          <a key={v} href={`#${v}`} className={`whitespace-nowrap rounded-full px-2 py-1.5 sm:px-3 ${view === v ? "bg-navy text-white" : "text-navy"}`}>
+          <a aria-current={view === v ? "page" : undefined} key={v} href={`#${v}`} className={`whitespace-nowrap rounded-full px-2 py-1.5 sm:px-3 ${view === v ? "bg-navy text-white" : "text-navy"}`}>
             {v === "nurse" ? "Nurse" : v === "doctor" ? "Doctor" : v === "reports" ? "Reports" : v === "episodes" ? "Care loops" : "Mother"}
           </a>
         ))}
-      </div>
+      </nav>
       {view === "nurse" ? <NurseDashboard /> : view === "doctor" ? <DoctorDashboard /> : view === "reports" ? <ReportsDashboard /> : view === "episodes" ? <EpisodesDashboard /> : <MomDashboard />}
-    </CareProvider></EpisodeProvider>
+      <BuildStatus/>
+    </CareProvider></EpisodeProvider></ErrorBoundary>
   );
 }
 

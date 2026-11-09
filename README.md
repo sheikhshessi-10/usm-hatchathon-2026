@@ -37,3 +37,7 @@ npm run build   # typecheck + production build
 - `current-workflow.md` – written version of today's workflow
 - `judging-rubric.png` – the judging rubric
 
+
+## Release handoff
+
+[Audit](docs/production-readiness/AUDIT.md) · [Release verification](docs/production-readiness/RELEASE.md) · [Demo runbook](docs/production-readiness/DEMO_RUNBOOK.md)
