@@ -151,3 +151,28 @@
   .patient-hero { gap: .45rem; }
   .patient-brand small { display: none; }
 }
+
+.patient-hero {
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  border: 1px solid #efdae5;
+  border-radius: 1.5rem;
+  background: linear-gradient(115deg, #fae1ec, #f4ebfb 72%, #edf4fb);
+}
+.patient-nav { margin-top: .45rem; }
+.patient-card { border-radius: 1.1rem; }
+.patient-note {
+  display: block; margin-block: 0 .85rem; font-size: .83rem; font-weight: 650;
+}
+.patient-note span { margin-left: .3rem; color: var(--patient-muted); font-size: .75rem; font-weight: 400; }
+.patient-note textarea {
+  display: block; width: 100%; margin-top: .35rem; padding: .6rem .7rem;
+  resize: vertical; border: 1px solid var(--patient-border); border-radius: .75rem;
+  font-size: 1rem; font-weight: 400;
+}
+.patient-history-entry { grid-column: 1 / -1; }
+.patient-entry-note { margin-top: .5rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+@media (max-width: 420px) {
+  .patient-day { min-width: 0; padding-left: .65rem; }
+  .patient-day span { display: none; }
+}

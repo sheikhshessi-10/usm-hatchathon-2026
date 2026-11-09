@@ -56,6 +56,39 @@ describe("doctor to care-team workflow",()=>{
     await click("My plan");
     expect(host.textContent).toContain("Confirm transport for follow-up");
   });
+  it("keeps a patient's portal report attached to their own demo record", async () => {
+    await navigate("#mom/m2");
+    await click("A hard day");
+    await change(host.querySelector("textarea")!, "Fictional update about transportation.");
+    await click("Save my check-in");
+    expect(host.textContent).toContain("Check-in saved");
+    await navigate("#doctor/m1");
+    expect(host.textContent).not.toContain("Fictional update about transportation.");
+    await navigate("#doctor/m2");
+    expect(host.textContent).toContain("Fictional update about transportation.");
+    expect(host.querySelector('a[href="#mom/m2/history"]')).toBeTruthy();
+    await navigate("#mom/m2/history");
+    expect(host.textContent).toContain("What you shared");
+    expect(host.textContent).toContain("Fictional update about transportation.");
+  });
+
+  it("retains older browser check-ins when upgrading the demo workflow", async () => {
+    const { checkIns, ...legacyWorkflow } = JSON.parse(localStorage.getItem("carebridge-workflow-v1")!);
+    expect(checkIns).toEqual({});
+    localStorage.setItem("carebridge-workflow-v1", JSON.stringify(legacyWorkflow));
+    const { MOMS } = await import("../data/moms");
+    const mom = MOMS[0];
+    const key = `carebridge-demo-feeling-v1:${mom.id}:${mom.history?.deliveryDate ?? "demo"}:${mom.dayToday}`;
+    localStorage.setItem(key, "In between");
+    await act(async () => root.unmount());
+    root = createRoot(host);
+    await act(async () => root.render(<App />));
+    expect(host.textContent).toContain("In between");
+    expect(JSON.parse(localStorage.getItem("carebridge-workflow-v1")!).checkIns[mom.id]).toEqual({
+      feeling: "In between", note: "", at: null,
+    });
+  });
+
   it("supports patient search and resets the assessment form when selection changes",async()=>{
     const search=host.querySelector('input[aria-label="Search doctor patients"]') as HTMLInputElement;
     await change(search,"Leah");
