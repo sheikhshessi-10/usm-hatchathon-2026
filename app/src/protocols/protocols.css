@@ -110,3 +110,10 @@
 .protocol-emergency-call summary span { margin-left: auto; border: 1px solid #e4abb2; border-radius: .4rem; padding: .12rem .4rem; font-size: .7rem; }
 .protocol-emergency-call > div { padding: .7rem .75rem; font-size: .85rem; }
 .protocol-emergency-call p + p { margin-top: .35rem; }
+
+
+.protocol-channel-jump { display: none; }
+@media (max-width: 850px) {
+  .protocol-channel-jump { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+  .protocol-channel-jump button { min-height: 2.75rem; padding: .35rem; background: #fff; border: 1px solid var(--protocol-line); border-radius: .65rem; font-size: .8rem; font-weight: 750; }
+}

@@ -14,17 +14,17 @@ const FEELING_STYLES = [
   { icon: CloudRain, color: "blue" },
 ] as const;
 const PAGES = [
-  { label: "Today", icon: House },
-  { label: "My plan", icon: ClipboardList },
-  { label: "My history", icon: History },
-  { label: "Support", icon: CircleHelp },
+  { label: "Today", slug: "today", icon: House },
+  { label: "My plan", slug: "plan", icon: ClipboardList },
+  { label: "My history", slug: "history", icon: History },
+  { label: "Support", slug: "support", icon: CircleHelp },
 ] as const;
 
 type Page = (typeof PAGES)[number]["label"];
 
 function readPatientRoute() {
   const [, patientId, section] = typeof location === "undefined" ? [] : location.hash.split("/");
-  return { patientId, page: section === "history" ? "My history" as const : "Today" as const };
+  return { patientId, page: PAGES.find(({ slug }) => slug === section)?.label ?? "Today" };
 }
 
 function DailyCheckIn({ mom }: { mom: Mom }) {
@@ -87,7 +87,7 @@ export default function MomDashboard() {
   const [page, setPage] = useState<Page>(() => readPatientRoute().page);
   useEffect(() => {
     const sync = () => {
-      if (!location.hash.startsWith("#mom")) return;
+      if (!/^#mom(?:\/|$)/.test(location.hash)) return;
       const route = readPatientRoute();
       setMomId(route.patientId);
       setPage(route.page);
@@ -107,8 +107,10 @@ export default function MomDashboard() {
   const day = Math.max(1, Math.min(mom.dayToday, 10));
 
   function switchPage(destination: Page) {
+    const index = PAGES.findIndex(({ label }) => label === destination);
     setPage(destination);
-    nav.current?.querySelectorAll("button")[PAGES.findIndex(({ label }) => label === destination)]?.focus();
+    location.hash = `#mom/${mom.id}/${PAGES[index].slug}`;
+    nav.current?.querySelectorAll("button")[index]?.focus();
   }
 
   return (
@@ -135,7 +137,7 @@ export default function MomDashboard() {
 
         <nav ref={nav} className="patient-nav" aria-label="Patient portal">
           {PAGES.map(({ label, icon: Icon }) => (
-            <button type="button" key={label} aria-pressed={page === label} onClick={() => setPage(label)}>
+            <button type="button" key={label} aria-pressed={page === label} onClick={() => switchPage(label)}>
               <Icon size={20} aria-hidden="true" /> <span>{label}</span>
             </button>
           ))}
@@ -157,7 +159,7 @@ export default function MomDashboard() {
             <section className="patient-card patient-next">
               <p className="patient-kicker"><CalendarDays size={15} aria-hidden="true" /> Care plan</p>
               <h2>Your next action</h2>
-              {next ? <div className="patient-next-action"><span className="patient-icon"><ClipboardList size={20} aria-hidden="true" /></span><div><strong>{next.title}</strong><p>{next.dueDay < day ? "Past due" : next.dueDay === day ? "Due today" : `Due on day ${next.dueDay} after delivery`}</p></div></div> : <p className="patient-muted">Your sample care actions are up to date.</p>}
+              {next ? <div className="patient-next-action"><span className="patient-icon"><ClipboardList size={20} aria-hidden="true" /></span><div><strong>{next.title}</strong><p>{next.dueDay < mom.dayToday ? "Past due" : next.dueDay === mom.dayToday ? "Due today" : `Due on day ${next.dueDay} after delivery`}</p></div></div> : <p className="patient-muted">Your sample care actions are up to date.</p>}
               <p className="patient-visit"><strong>Next visit</strong> {mom.visit}</p>
               <button type="button" className="patient-link" onClick={() => switchPage("My plan")}>See my care plan <ArrowRight size={16} aria-hidden="true" /></button>
             </section>

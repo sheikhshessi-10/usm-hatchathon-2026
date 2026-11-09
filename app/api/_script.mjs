@@ -79,7 +79,7 @@ export function assistant(ctx) {
   const first = ctx.momName.split(" ")[0];
   return {
     name: "CareBridge check-in",
-    firstMessage: `Hi ${first}, this is Bridget, the automated daily check-in from your care team at Forrest General. Is now a good time for a quick 3-minute check-in on you and ${ctx.babyName}?`,
+    firstMessage: `Hey ${first}, it’s Aven from AVENLYTH, calling for a demo check-in. You got a minute to talk about how you and ${ctx.babyName} are doing?`,
     model: {
       provider: "openai",
       model: "gpt-4o",
@@ -90,7 +90,7 @@ export function assistant(ctx) {
     endCallFunctionEnabled: true,
     maxDurationSeconds: 300,
     silenceTimeoutSeconds: 30,
-    voicemailMessage: `Hi ${first}, this is the CareBridge check-in from Forrest General. Please call your nurse back at 601-555-0100. We'll try again later today.`,
+    voicemailMessage: `Hey, it’s Aven from AVENLYTH with a demo check-in. Thanks.`,
     endCallMessage: "Goodbye.",
     analysisPlan: {
       summaryPlan: { enabled: true },

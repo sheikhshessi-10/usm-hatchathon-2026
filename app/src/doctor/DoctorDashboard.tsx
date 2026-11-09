@@ -19,7 +19,7 @@ export default function DoctorDashboard() {
   useEffect(()=>{const onHash=()=>{const id=location.hash.split("/")[1];setSelected(moms.some(m=>m.id===id)?id:"m1");};addEventListener("hashchange",onHash);return()=>removeEventListener("hashchange",onHash);},[]);
   const k = continuityMetrics(moms, state);
   const shown = moms.filter(m => {
-    if (!`${m.name} ${m.useCase} ${m.county}`.toLowerCase().includes(query.toLowerCase())) return false;
+    if (!`${m.name} ${m.useCase} ${m.county}`.toLowerCase().includes(query.trim().toLowerCase())) return false;
     if (filter === "urgent") return status(m).level.startsWith("red");
     if (filter === "unreviewed") return !state.reviews.some(r => r.patientId === m.id);
     if (filter === "overdue") return state.tasks.some(t => t.patientId === m.id && !t.completed && t.dueDay < m.dayToday);
@@ -39,12 +39,15 @@ export default function DoctorDashboard() {
       <div className="grid items-start gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
         <Card className="overflow-hidden">
           <div className="space-y-3 border-b border-line p-4">
-            <label className="flex items-center gap-2 rounded-lg border border-line px-3"><Search size={16}/><input aria-label="Search doctor patients" className="min-w-0 w-full bg-transparent py-2 text-sm outline-none" placeholder="Patient, pathway, county" value={query} onChange={e=>setQuery(e.target.value)}/></label>
-            <label className="block text-xs font-semibold">Review queue<select value={filter} onChange={e=>setFilter(e.target.value as Filter)} className="mt-1 w-full rounded-lg border border-line bg-white p-2 text-sm"><option value="all">All {moms.length} patients</option><option value="urgent">Urgent clinical findings</option><option value="unreviewed">Awaiting doctor review</option><option value="overdue">Overdue care actions</option></select></label>
+            <label className="flex items-center gap-2 rounded-lg border border-line px-3 focus-within:ring-2 focus-within:ring-navy"><Search size={16} aria-hidden="true"/><input aria-label="Search doctor patients" className="min-h-11 min-w-0 w-full bg-transparent py-2 text-sm outline-none" placeholder="Patient, pathway, county" value={query} onChange={e=>setQuery(e.target.value)}/></label>
+            <label className="block text-xs font-semibold">Review queue<select value={filter} onChange={e=>setFilter(e.target.value as Filter)} className="mt-1 min-h-11 w-full rounded-lg border border-line bg-white p-2 text-sm"><option value="all">All {moms.length} patients</option><option value="urgent">Urgent clinical findings</option><option value="unreviewed">Awaiting doctor review</option><option value="overdue">Overdue care actions</option></select></label>
           </div>
-          <div className="max-h-64 overflow-y-auto lg:max-h-[640px]">{shown.map(m=><button key={m.id} aria-pressed={m.id===selected} onClick={()=>{setSelected(m.id);location.hash=`#doctor/${m.id}`;if(window.matchMedia?.("(max-width: 1023px)").matches) workspace.current?.focus();}} className={`block w-full border-b border-line p-4 text-left hover:bg-hover ${m.id===selected?"bg-hover ring-inset ring-2 ring-navy/20":""}`}><div className="flex items-center justify-between gap-2"><span className="font-bold">{m.name}</span>{state.reviews.some(r=>r.patientId===m.id)&&<CheckCircle2 size={15} className="text-green"/>}</div><p className="mt-1 text-xs text-body">{m.useCase} · day {m.dayToday}</p><div className="mt-2"><Pill level={status(m).level}>{LEVEL_TEXT[status(m).level]}</Pill></div></button>)}{!shown.length&&<p className="p-6 text-sm text-body">No patients match this queue.</p>}</div>
+          <p role="status" className="px-4 py-2 text-xs text-body">{shown.length} of {moms.length} patients</p>
+          <div className="max-h-64 overflow-y-auto lg:max-h-[640px]">{shown.map(m=><button key={m.id} aria-pressed={m.id===selected} onClick={()=>{setSelected(m.id);location.hash=`#doctor/${m.id}`;if (window.matchMedia?.("(max-width: 1023px)").matches) requestAnimationFrame(() => workspace.current?.querySelector("h2")?.focus());}} className={`block w-full border-b border-line p-4 text-left hover:bg-hover ${m.id===selected?"bg-hover ring-inset ring-2 ring-navy/20":""}`}><div className="flex items-center justify-between gap-2"><span className="font-bold">{m.name}</span>{state.reviews.some(r=>r.patientId===m.id)&&<CheckCircle2 size={15} className="text-green"/>}</div><p className="mt-1 text-xs text-body">{m.useCase} · day {m.dayToday}</p><div className="mt-2"><Pill level={status(m).level}>{LEVEL_TEXT[status(m).level]}</Pill></div></button>)}{!shown.length && <div className="p-4 text-sm text-body"><p>No patients match your search and filters.</p><button type="button" className="mt-1 min-h-11 font-bold text-navy underline" onClick={() => { setQuery(""); setFilter("all"); }}>Clear search and filters</button></div>}</div>
         </Card>
-        <div ref={workspace} tabIndex={-1} aria-label="Selected patient workspace" className="min-w-0"><PatientWorkspace key={mom.id} mom={mom}/></div>
+        <div ref={workspace} className="min-w-0">
+          {!shown.some(patient => patient.id === mom.id) && <p className="mb-3 rounded-lg border border-line bg-white px-4 py-3 text-sm text-body">Viewing {mom.name}. This patient is outside the current queue filter.</p>}
+          <PatientWorkspace key={mom.id} mom={mom}/></div>
       </div>
       <details className="rounded-card border border-line bg-white p-5">
         <summary className="cursor-pointer font-bold text-navy">Cohort metrics <span className="ml-2 text-sm font-normal text-body">{k.pendingUrgent} urgent reviews pending</span></summary>
@@ -58,7 +61,7 @@ export default function DoctorDashboard() {
       <p className="mt-3 text-sm text-body"><b>Continuity coverage</b><br/> {k.reviewed}/{k.enrolled} patients have a documented doctor review. {k.handoffsPending} handoffs await receiving-role acceptance. {k.handoffsAccepted}/{k.handoffRequests} assigned actions accepted; {k.handoffsClosed}/{k.handoffRequests} assigned actions accepted and completed. Review dispositions alone do not create or close a handoff. Clinical recovery, readmissions prevented, and time to response are not measured by this demo.</p>
         </div>
       </details>
-      <button className="text-xs font-semibold text-body underline" onClick={()=>{if(window.confirm("Reset demo check-ins, reviews, care actions, and nurse notes?"))reset();}}>Reset demo workflow</button>
+      <button className="min-h-11 text-xs font-semibold text-body underline" onClick={()=>{if(window.confirm("Reset demo check-ins, reviews, care actions, and nurse notes?"))reset();}}>Reset demo workflow</button>
     </div>
   </main>;
 }
@@ -72,10 +75,10 @@ function PatientWorkspace({mom}:{mom:Mom}) {
   const [actionSaved,setActionSaved]=useState("");
   const s=status(mom), reviews=state.reviews.filter(r=>r.patientId===mom.id), tasks=state.tasks.filter(t=>t.patientId===mom.id);
   return <div className="min-w-0 space-y-5">
-    <Card className="p-5 sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-2xl font-extrabold">{mom.name}</h2><p className="mt-1 text-sm text-body">{mom.age} years · {mom.county} County · postpartum day {mom.dayToday}</p><p className="mt-2 font-semibold">{mom.useCase}</p></div><Pill level={s.level}>{LEVEL_TEXT[s.level]}</Pill></div>
+    <Card className="p-5 sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 tabIndex={-1} className="text-2xl font-extrabold">{mom.name}</h2><p className="mt-1 text-sm text-body">{mom.age} years · {mom.county} County · postpartum day {mom.dayToday}</p><p className="mt-2 font-semibold">{mom.useCase}</p></div><Pill level={s.level}>{LEVEL_TEXT[s.level]}</Pill></div>
       <p className="mt-3 text-sm">{mom.diagnosis} · {mom.delivery}</p>
       <div className="mt-4 rounded-xl bg-ground p-4"><h3 className="flex items-center gap-2 text-sm font-bold"><Activity size={16}/> Current findings</h3>{s.findings.length?<ul className="mt-2 list-disc pl-5 text-sm">{s.findings.map((f,i)=><li key={i}>{f.reason}</li>)}</ul>:<p className="mt-2 text-sm">No current flagged finding. Outstanding care tasks still require follow-up.</p>}</div>
-      <p className="mt-3 text-sm"><b>Nurse handoff:</b> {mom.nurseNote || "No nurse note recorded."}</p>
+      <p className="mt-3 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]"><b>Nurse handoff:</b> {mom.nurseNote || "No nurse note recorded."}</p>
       <PatientCheckIn mom={mom} />
       <a href={`#nurse/${mom.id}`} className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-navy">Open nurse workspace <ArrowUpRight size={15}/></a>
     </Card>
@@ -86,9 +89,9 @@ function PatientWorkspace({mom}:{mom:Mom}) {
         <label className="block text-sm font-semibold">Contact outcome<select value={contactOutcome} onChange={e=>setContactOutcome(e.target.value as Review["contactOutcome"])} className="mt-1 block w-full rounded-lg border border-line bg-white p-2"><option value="not-recorded">Not recorded</option><option value="unreached">Patient not reached</option><option value="reached">Patient reached — documented in note</option></select></label>
         <button disabled={recoveryRequired || !note.trim()} className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white disabled:opacity-40">Save doctor review</button>
       </form><p role="status" className="mt-2 text-sm text-green">{reviewSaved}</p>
-      <ol className="mt-3 space-y-3">{[...reviews].reverse().map((r,i)=><li key={i} className="rounded-lg bg-ground p-3 text-sm"><div className="text-xs font-semibold text-body">{r.disposition} · {new Date(r.at).toLocaleString()}</div><p className="mt-1 whitespace-pre-wrap">{r.note}</p></li>)}</ol>
+      <ol className="mt-3 space-y-3">{[...reviews].reverse().map((r,i)=><li key={i} className="rounded-lg bg-ground p-3 text-sm"><div className="text-xs font-semibold text-body">{r.disposition} · {new Date(r.at).toLocaleString()}</div><p className="mt-1 whitespace-pre-wrap [overflow-wrap:anywhere]">{r.note}</p></li>)}</ol>
     </Card>
-    <Card className="p-5"><h3 className="flex items-center gap-2 font-bold"><ClipboardList size={17}/> Care actions and handoffs</h3><ul className="mt-3 space-y-3">{tasks.map(t=><li key={t.id} className="rounded-xl border border-line p-3 text-sm"><p className="font-semibold">{t.title}</p><p className="mt-1 text-xs text-body">{t.owner} · due postpartum day {t.dueDay} · {t.completed?"Completed":t.dueDay<mom.dayToday?"Overdue":"Pending"}</p><CareAction task={t} actor="Doctor"/></li>)}</ul>
+    <Card className="p-5"><h3 className="flex items-center gap-2 font-bold"><ClipboardList size={17}/> Care actions and handoffs</h3><ul className="mt-3 space-y-3">{tasks.map(t=><li key={t.id} className="rounded-xl border border-line p-3 text-sm"><p className="font-semibold [overflow-wrap:anywhere]">{t.title}</p><p className="mt-1 text-xs text-body">{t.owner} · due postpartum day {t.dueDay} · {t.completed?"Completed":t.dueDay<mom.dayToday?"Overdue":"Pending"}</p><CareAction task={t} actor="Doctor"/></li>)}</ul>
       <form className="mt-4 space-y-3 border-t border-line pt-4" onSubmit={e=>{e.preventDefault();addTask({patientId:mom.id,title,owner,dueDay:Number(due)});setTitle("");setActionSaved("Care action added to the demo care plan.");}}>
         <label className="block text-sm font-semibold">New care action<input required maxLength={300} value={title} onChange={e=>setTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-line p-2 font-normal" placeholder="Specific next action and handoff"/></label>
         <div className="flex flex-wrap gap-3"><label className="text-sm">Owner<select value={owner} onChange={e=>setOwner(e.target.value as "Nurse"|"Doctor")} className="ml-2 rounded-lg border border-line bg-white p-2"><option>Nurse</option><option>Doctor</option></select></label><label className="text-sm">Due postpartum day<input required type="number" min="0" max="365" step="1" value={due} onChange={e=>setDue(e.target.value)} className="ml-2 w-20 rounded-lg border border-line p-2"/></label></div>

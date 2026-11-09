@@ -13,6 +13,7 @@ export default async function handler(req, res) {
       .filter((c) => c.assistant?.name === "CareBridge check-in" || (process.env.VAPI_ASSISTANT_ID && c.assistantId === process.env.VAPI_ASSISTANT_ID))
       .map((c) => ({
         id: c.id,
+        direction: c.type ?? null,
         momName: c.customer?.name ?? (c.type === "inboundPhoneCall" ? "Keisha Williams (demo call)" : "Unknown"),
         status: c.status,
         endedReason: c.endedReason ?? null,
