@@ -62,9 +62,9 @@ export default function NurseDashboard() {
       <main className="flex-1 min-w-0 px-4 sm:px-8 pt-6 pb-12">
         <div className="mx-auto max-w-6xl flex flex-col gap-6">
           {/* Hero, LGS style navy band */}
-          <section className="relative overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-navy via-navy to-navy-900 px-7 py-8 sm:px-10 text-white">
+          <section className="relative overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-navy via-navy to-navy-900 px-5 py-5 text-white sm:px-10 sm:py-8">
             <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/5 blur-2xl" />
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="flex flex-col gap-3">
                 <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/60">{today} · Synthetic demonstration cohort</span>
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Nurse worklist</h1>
@@ -79,7 +79,7 @@ export default function NurseDashboard() {
                   Review urgent alerts <ArrowRight size={16} />
                 </button>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
                 <Stat label="Act now" value={counts.act} tone="red" />
                 <Stat label="Review today" value={counts.review} tone="yellow" />
                 <Stat label="On track" value={counts.ok} tone="green" />
@@ -192,9 +192,9 @@ export default function NurseDashboard() {
 function Stat({ label, value, tone }: { label: string; value: number; tone: "red" | "yellow" | "green" | "plain" }) {
   const dot = { red: "bg-[#ff6b5e]", yellow: "bg-gold", green: "bg-[#4cc27a]", plain: "bg-white/40" }[tone];
   return (
-    <div className="min-w-0 rounded-xl bg-white/[0.07] px-4 py-3 ring-1 ring-white/10">
+    <div className="min-w-0 rounded-xl bg-white/[0.07] px-3 py-2 sm:px-4 sm:py-3 ring-1 ring-white/10">
       <div className="flex items-center gap-2 text-[12px] font-semibold text-white/70"><span className={`h-2 w-2 rounded-full ${dot}`} />{label}</div>
-      <div className="mt-1 text-3xl font-extrabold tabular-nums">{value}</div>
+      <div className="mt-1 text-2xl font-extrabold tabular-nums sm:text-3xl">{value}</div>
     </div>
   );
 }
