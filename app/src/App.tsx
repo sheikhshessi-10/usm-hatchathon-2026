@@ -1,38 +1,71 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Activity } from "lucide-react";
 import { ErrorBoundary } from "./ui/ErrorBoundary";
 import { StorageNotice, BuildStatus } from "./ui/ReleaseStatus";
+import { Companion } from "./ui/Companion";
 import NurseDashboard from "./nurse/NurseDashboard";
 import MomDashboard from "./mom/MomDashboard";
-
 import EpisodesDashboard from "./episodes/EpisodesDashboard";
 import { EpisodeProvider } from "./episodes/context";
 import ReportsDashboard from "./reports/ReportsDashboard";
 import DoctorDashboard from "./doctor/DoctorDashboard";
 import { CareProvider } from "./data/workflow";
-type View = "nurse" | "mom" | "doctor" | "reports" | "episodes";
-const read = (): View => location.hash === "#episodes" ? "episodes" : location.hash === "#reports" ? "reports" : location.hash.startsWith("#doctor") ? "doctor" : location.hash === "#mom" ? "mom" : "nurse";
 
-export default function App() {
-  const [view, setView] = useState<View>(read);
-  useEffect(() => {
-    const on = () => setView(read());
-    addEventListener("hashchange", on);
-    return () => removeEventListener("hashchange", on);
-  }, []);
+const views = [
+  ["mom", "Patient", MomDashboard],
+  ["episodes", "Care loops", EpisodesDashboard],
+  ["nurse", "Nurse", NurseDashboard],
+  ["doctor", "Doctor", DoctorDashboard],
+  ["reports", "Reports", ReportsDashboard],
+] as const;
 
-  return (
-    <ErrorBoundary><EpisodeProvider><CareProvider>
-      <StorageNotice/>
-      <nav aria-label="CareBridge navigation" className="fixed left-4 right-4 top-4 z-30 ml-auto flex w-fit max-w-[calc(100%-2rem)] overflow-x-auto rounded-full print:hidden border border-line bg-white/85 p-1 text-xs font-semibold shadow-sm backdrop-blur">
-        {(["nurse", "doctor", "mom", "reports", "episodes"] as const).map((v) => (
-          <a aria-current={view === v ? "page" : undefined} key={v} href={`#${v}`} className={`whitespace-nowrap rounded-full px-2 py-1.5 sm:px-3 ${view === v ? "bg-navy text-white" : "text-navy"}`}>
-            {v === "nurse" ? "Nurse" : v === "doctor" ? "Doctor" : v === "reports" ? "Reports" : v === "episodes" ? "Care loops" : "Patient"}
-          </a>
-        ))}
-      </nav>
-      {view === "nurse" ? <NurseDashboard /> : view === "doctor" ? <DoctorDashboard /> : view === "reports" ? <ReportsDashboard /> : view === "episodes" ? <EpisodesDashboard /> : <MomDashboard />}
-      <BuildStatus/>
-    </CareProvider></EpisodeProvider></ErrorBoundary>
-  );
+function read() {
+  const route = location.hash.slice(1).split("/")[0];
+  return views.find(([id]) => id === route) ?? views[0];
 }
 
+export default function App() {
+  const [[view, , Page], setView] = useState(read);
+  const content = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onHashChange = () => setView(read());
+    addEventListener("hashchange", onHashChange);
+    return () => removeEventListener("hashchange", onHashChange);
+  }, []);
+  useEffect(() => {
+    document.querySelector("header")?.scrollIntoView?.();
+  }, [view]);
+
+  return (
+    <ErrorBoundary>
+      <EpisodeProvider>
+        <CareProvider>
+          <a href="#workspace-content" onClick={event => { event.preventDefault(); content.current?.focus(); }} className="sr-only z-50 bg-white p-3 font-bold focus:not-sr-only focus:absolute">
+            Skip to workspace
+          </a>
+          <header className="border-b border-line bg-white print:hidden">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-2 sm:px-8">
+              <a href="#mom" className="inline-flex items-center gap-2 font-extrabold text-navy">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-navy text-white"><Activity size={19} aria-hidden="true" /></span>
+                CareBridge
+              </a>
+              <nav aria-label="CareBridge navigation" className="order-last grid w-full grid-cols-5 gap-1 sm:order-none sm:flex sm:w-auto">
+                {views.map(([id, label]) => (
+                  <a key={id} href={`#${id}`} aria-current={view === id ? "page" : undefined} className={`grid min-h-11 place-items-center rounded-lg px-1 text-center text-xs font-bold sm:px-3 sm:text-sm ${view === id ? "bg-navy text-white" : "text-navy hover:bg-hover"}`}>
+                    {label}
+                  </a>
+                ))}
+              </nav>
+              <Companion />
+            </div>
+          </header>
+          <StorageNotice />
+          <div id="workspace-content" ref={content} tabIndex={-1}>
+            <Page />
+          </div>
+          <BuildStatus />
+        </CareProvider>
+      </EpisodeProvider>
+    </ErrorBoundary>
+  );
+}

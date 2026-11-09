@@ -18,3 +18,14 @@ body { @apply bg-ground text-ink; }
   details { display: block; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+.pip-dialog {
+  inset: auto max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) auto;
+  width: min(25rem, calc(100vw - 2rem));
+  height: min(34rem, calc(100dvh - 2rem));
+  max-height: none;
+  margin: 0;
+  overflow: hidden;
+}
+.pip-dialog[open] { display: flex; flex-direction: column; }
+.pip-dialog::backdrop { background: rgb(6 29 54 / 35%); }

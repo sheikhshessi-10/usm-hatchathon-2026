@@ -50,8 +50,7 @@ export default function NurseDashboard() {
 
   return (
     <div className="flex min-h-screen bg-ground text-ink">
-      <Rail />
-      <main className="flex-1 min-w-0 px-4 sm:px-8 pt-16 pb-12">
+      <main className="flex-1 min-w-0 px-4 sm:px-8 pt-6 pb-12">
         <div className="mx-auto max-w-6xl flex flex-col gap-6">
           {/* Hero, LGS style navy band */}
           <section className="relative overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-navy via-navy to-navy-900 px-7 py-8 sm:px-10 text-white">
@@ -96,7 +95,7 @@ export default function NurseDashboard() {
             <label className="relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-body" />
               <input
-                id="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search moms or county..."
+                id="search" aria-label="Search nurse patients" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search moms or county..."
                 className="h-10 w-64 rounded-full border border-line bg-white pl-9 pr-4 text-sm outline-none focus:border-navy/40"
               />
             </label>
@@ -174,19 +173,10 @@ export default function NurseDashboard() {
 function Stat({ label, value, tone }: { label: string; value: number; tone: "red" | "yellow" | "green" | "plain" }) {
   const dot = { red: "bg-[#ff6b5e]", yellow: "bg-gold", green: "bg-[#4cc27a]", plain: "bg-white/40" }[tone];
   return (
-    <div className="min-w-[120px] rounded-xl bg-white/[0.07] px-4 py-3 ring-1 ring-white/10">
+    <div className="min-w-0 rounded-xl bg-white/[0.07] px-4 py-3 ring-1 ring-white/10">
       <div className="flex items-center gap-2 text-[12px] font-semibold text-white/70"><span className={`h-2 w-2 rounded-full ${dot}`} />{label}</div>
       <div className="mt-1 text-3xl font-extrabold tabular-nums">{value}</div>
     </div>
-  );
-}
-
-function Rail() {
-  return (
-    <aside className="sticky top-0 hidden h-screen w-14 shrink-0 flex-col items-center gap-2 border-r border-line bg-white py-4 sm:flex">
-      <div className="mb-4 grid h-9 w-9 place-items-center rounded-lg bg-navy text-[13px] font-extrabold text-gold">CB</div>
-      <span className="mt-auto grid h-8 w-8 place-items-center rounded-full bg-navy text-xs font-bold text-white">T</span>
-    </aside>
   );
 }
 

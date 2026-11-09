@@ -1,0 +1,74 @@
+import { useEffect, useRef, useState } from "react";
+import { Send, X } from "lucide-react";
+import { companionReply, companionTopics, type CompanionReply } from "./companionReplies";
+
+function Pip() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 40 40" className="h-9 w-9 shrink-0">
+      <path d="M19 12c-1-5 1-8 6-9 1 5-1 8-6 9" fill="#36816b" />
+      <path d="M19 12c-1-4-4-6-8-5 1 4 4 6 8 5" fill="#69a88a" />
+      <path d="M19 11c11-1 16 5 16 12S29 36 20 36 5 31 5 23s5-12 14-12" fill="#f7cfdf" />
+      <circle cx="15" cy="23" r="1.6" fill="#52243f" />
+      <circle cx="25" cy="23" r="1.6" fill="#52243f" />
+      <path d="M18 27q2 2 4 0" stroke="#52243f" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function Companion() {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const launch = useRef<HTMLButtonElement>(null);
+  const thread = useRef<HTMLDivElement>(null);
+  const [draft, setDraft] = useState("");
+  const [turns, setTurns] = useState<Array<{ question: string; reply: CompanionReply }>>([]);
+  useEffect(() => {
+    if (thread.current) thread.current.scrollTop = thread.current.scrollHeight;
+  }, [turns]);
+
+  function send(message: string) {
+    const question = message.trim();
+    if (!question) return;
+    setTurns(current => [...current.slice(-19), { question, reply: companionReply(question) }]);
+    setDraft("");
+  }
+
+  return (
+    <>
+      <button ref={launch} type="button" aria-haspopup="dialog" onClick={() => dialog.current?.showModal()} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#ebd0dd] bg-[#fff4f8] px-2 pr-3 text-sm font-bold text-[#632e4e]">
+        <Pip /> Ask Pip
+      </button>
+      <dialog ref={dialog} aria-labelledby="pip-title" onClose={() => launch.current?.focus()} className="pip-dialog rounded-[1.5rem] border border-[#ebd0dd] bg-white text-ink shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-[#ebd0dd] bg-[#fff4f8] p-4">
+          <Pip />
+          <div className="flex-1">
+            <h2 id="pip-title" className="font-extrabold text-[#632e4e]">Pip</h2>
+            <p className="text-xs text-body">Your CareBridge demo guide</p>
+          </div>
+          <button type="button" aria-label="Close Pip chat" onClick={() => dialog.current?.close()} className="grid h-11 w-11 place-items-center rounded-full hover:bg-white"><X size={20} /></button>
+        </div>
+        <div ref={thread} role="log" aria-label="Pip conversation" className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 text-sm">
+          <p className="rounded-2xl rounded-tl-sm bg-[#fff4f8] p-3">Hi, I’m Pip! I can help you explore CareBridge. What would you like to try?</p>
+          {turns.map(({ question, reply }, i) => (
+            <div key={i} className="space-y-2">
+              <p className="ml-8 break-words rounded-2xl rounded-tr-sm bg-navy p-3 text-white"><span className="sr-only">You: </span>{question}</p>
+              <div className="mr-8 rounded-2xl rounded-tl-sm bg-[#fff4f8] p-3">
+                <p><span className="sr-only">Pip: </span>{reply.text}</p>
+                {reply.link && <a href={reply.link.href} onClick={() => dialog.current?.close()} className="mt-2 inline-block font-bold text-[#632e4e] underline">{reply.link.label}</a>}
+              </div>
+            </div>
+          ))}
+        </div>
+        {!turns.length && <div className="flex flex-wrap gap-2 px-4 pb-3">
+          {companionTopics.map(topic => <button key={topic} type="button" onClick={() => send(topic)} className="rounded-full border border-[#ebd0dd] px-3 py-2 text-xs font-bold text-[#632e4e] hover:bg-[#fff4f8]">{topic}</button>)}
+        </div>}
+        <form className="border-t border-line p-4" onSubmit={event => { event.preventDefault(); send(draft); }}>
+          <div className="flex gap-2">
+            <input aria-label="Message Pip" value={draft} onChange={event => setDraft(event.target.value)} maxLength={280} placeholder="Ask about the demo…" className="min-w-0 flex-1 rounded-xl border border-line px-3 text-base" />
+            <button type="submit" aria-label="Send to Pip" disabled={!draft.trim()} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#632e4e] text-white disabled:opacity-40"><Send size={17} /></button>
+          </div>
+          <p className="mt-2 text-xs text-body">Scripted guide. Use fictional details only.</p>
+        </form>
+      </dialog>
+    </>
+  );
+}
