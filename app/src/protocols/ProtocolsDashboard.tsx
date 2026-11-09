@@ -48,12 +48,12 @@ export default function ProtocolsDashboard() {
           <div className="protocol-path-heading">
             {urgent ? <ShieldAlert size={23} aria-hidden="true" /> : <ClipboardList size={23} aria-hidden="true" />}
             <div>
-              <h2 id="path-title">{urgent ? "Stop the routine check-in" : "Track the report and keep follow-up open"}</h2>
-              <p>{urgent ? "In this sample, the patient reports chest pain and trouble breathing. The assistant interrupts the check-in and the demo queues an urgent staff review." : "Maya says she completed her screening. CareBridge records her statement and waits for matching evidence and doctor verification."}</p>
+              <h2 id="path-title">{urgent ? "Stop the routine check-in" : "Check in and find a time that works"}</h2>
+              <p>{urgent ? "In this sample, the patient reports chest pain and trouble breathing. The assistant interrupts the check-in and the demo queues an urgent staff review." : "Maya talks through her prescribed medicine, how her pain has changed, and when she can come in. The sample appointment is booked while follow-up stays open."}</p>
             </div>
           </div>
           <ol>
-            {(urgent ? ["Warning sign reported", "Routine questions stop", "Urgent review queued", "Staff acknowledges"] : ["Consent and identity", "Patient report captured", "Evidence pending", "Doctor verifies when available"]).map((label, index) =>
+            {(urgent ? ["Warning sign reported", "Routine questions stop", "Urgent review queued", "Staff acknowledges"] : ["Consent and identity", "Medication and pain check", "Agree on a time", "Attendance pending"]).map((label, index) =>
               <li key={label}><span>{index + 1}</span>{label}</li>
             )}
           </ol>
@@ -71,13 +71,6 @@ export default function ProtocolsDashboard() {
             const task = result.episode.tasks[0];
             const accepted = task?.state === "accepted";
             const headingId = `protocol-${channel.id}`;
-            const systemLines = urgent
-              ? [channel.opening, "I’m glad you told me. Please get medical care immediately. Don’t wait for a reply here. This demo records an urgent review request. No help has been dispatched."]
-              : [channel.opening, ...channel.routine];
-            let systemLine = 0;
-            const messages = result.interaction.messages.map(message => message.who === "system"
-              ? { ...message, text: systemLines[systemLine++] ?? message.text }
-              : message);
             return (
               <section key={channel.id} className="protocol-channel" aria-labelledby={headingId}>
                 <header className="protocol-channel-header">
@@ -90,8 +83,8 @@ export default function ProtocolsDashboard() {
                     <div><strong>{channel.id === "voice" ? result.patient.name : "CareBridge"}</strong><small>{channel.id === "voice" ? "Simulated outbound call" : channel.id === "sms" ? "Simulated text thread" : "Simulated portal assistant"}</small></div>
                   </div>
                   <p className="protocol-chat-meta"><LockKeyhole size={12} aria-hidden="true" /> Demo consent and identity confirmed</p>
-                  <ol className="protocol-messages" aria-label={`${channel.title} sample conversation`}>
-                    {messages.map((message, index) => (
+                  <ol className="protocol-messages" tabIndex={0} aria-label={`${channel.title} sample conversation`}>
+                    {result.messages.map((message, index) => (
                       <li key={index} data-speaker={message.who}>
                         <span className="protocol-speaker">{message.who === "patient" ? result.patient.name : "CareBridge"}{channel.id === "voice" && <> · <time dateTime={message.at}>{time.format(new Date(message.at))}</time></>}</span>
                         <p>{message.text}</p>
@@ -105,7 +98,7 @@ export default function ProtocolsDashboard() {
                 <div className="protocol-result" data-urgent={urgent}>
                   <p className="protocol-result-label">{urgent ? "Escalation protocol" : "Tracking protocol"}</p>
                   <p className="protocol-result-status" role="status">
-                    {urgent ? accepted ? "Staff acknowledged · case open" : "Urgent review queued · awaiting staff" : "Patient-reported · evidence pending"}
+                    {urgent ? accepted ? "Staff acknowledged · case open" : "Urgent review queued · awaiting staff" : "Appointment scheduled · attendance pending"}
                   </p>
                   {urgent && (
                     <>
@@ -127,7 +120,7 @@ export default function ProtocolsDashboard() {
 
         <footer className="protocol-footer">
           <strong>Demo protocol {PROTOCOLS[0].version}</strong>
-          <p>Fictional conversations run through the local Care Loops rules. Call placement, SMS delivery, agent replies, and staff notifications are simulated.</p>
+          <p>These scripts illustrate how a check-in could sound. The local Care Loops rules simulate appointment scheduling and urgent handoff. Calls, texts, agent replies, and staff notifications are simulated.</p>
         </footer>
       </div>
     </main>
