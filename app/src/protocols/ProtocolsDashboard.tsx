@@ -30,7 +30,7 @@ export default function ProtocolsDashboard() {
             <h1>Outreach &amp; escalation</h1>
             <p>Follow one fictional postpartum check-in across phone, text, and Aven. Switch scenarios to see what changes when a patient reports an urgent warning sign.</p>
           </div>
-          <a href="#episodes">Open Care Loops <ArrowRight size={16} aria-hidden="true" /></a>
+          <a href="#expo">Open Expo demo <ArrowRight size={16} aria-hidden="true" /></a>
         </header>
 
         <section className="protocol-switcher" aria-labelledby="scenario-title">
