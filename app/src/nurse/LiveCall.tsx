@@ -4,6 +4,7 @@ import { evaluate, type CheckIn, type MomSymptom } from "../lib/rules";
 import type { Mom } from "../data/moms";
 import { Card, Pill } from "../ui/parts";
 import { LEVEL_TEXT } from "../data/moms";
+import { PatientFile } from "./PatientFile";
 
 type CallData = {
   reached?: boolean; emergency?: boolean; sys?: number; dia?: number; symptoms?: string[]; tookMeds?: boolean;
@@ -123,12 +124,14 @@ export function LiveCall({ mom }: { mom: Mom }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="font-bold">Live demo phone line</h3>
-          <p className="mt-1 text-sm text-body">Call in to play the fictional patient. This panel follows the most recent incoming demo call.</p>
+          <p className="mt-1 text-sm text-body">Load the patient file, then call in and play the patient. The conversation shows up here live.</p>
         </div>
         <a href="tel:+16012305710" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy">
           <PhoneCall size={16} aria-hidden="true" /> Call (601) 230-5710
         </a>
       </div>
+      <PatientFile mom={mom} />
+
       {feedWarning && <p role="status" className="mt-3 text-sm text-body">The incoming call feed is temporarily unavailable. Checking again…</p>}
       {!callId && !feedWarning && <p role="status" className="mt-3 text-sm text-body">Waiting for an incoming demo call.</p>}
 
