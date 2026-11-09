@@ -1,6 +1,6 @@
-# CareBridge (USM Hatchathon 2026, Bio track)
+# AVENLYTH (USM Hatchathon 2026, Bio track)
 
-CareBridge demonstrates continuity of care across patient interactions, patient-scoped history, clinical coordination, and evidence-gated follow-up. Fifteen synthetic care journeys cover postpartum BP concerns, diabetes follow-up, wound and breast concerns, mood screening, anemia, pelvic recovery, access barriers, and routine recovery. This frontend uses recorded synthetic check-ins; it does not place calls, notify clinicians, prescribe, or send referrals.
+AVENLYTH demonstrates continuity of care across patient interactions, patient-scoped history, clinical coordination, and evidence-gated follow-up. Fifteen synthetic care journeys cover postpartum BP concerns, diabetes follow-up, wound and breast concerns, mood screening, anemia, pelvic recovery, access barriers, and routine recovery. This frontend uses recorded synthetic check-ins; it does not place calls, notify clinicians, prescribe, or send referrals.
 
 Expo and Finale: Monday, Nov 9, 2026, Thad Cochran Center.
 

@@ -7,7 +7,7 @@ export const channels = [
     id: "voice",
     title: "Phone call",
     subtitle: "Transcript",
-    opening: "Hey Maya, it’s the CareBridge assistant. Just checking up on you. You got a sec?",
+    opening: "Hey Maya, it’s Aven from AVENLYTH. Just checking up on you. You got a sec?",
     routine: [
       "Cool, Friday at 10 a.m. Central it is. I’ve got you down.",
       "Alright, I’ll let you get back to your day. Take care, Maya.",
@@ -21,7 +21,7 @@ export const channels = [
     id: "sms",
     title: "Text message",
     subtitle: "SMS preview",
-    opening: "Hey! Just checking up on you. How’s today going? — CareBridge\n\nReply STOP to opt out.",
+    opening: "Hey! Just checking up on you. How’s today going? — Aven from AVENLYTH\n\nReply STOP to opt out.",
     routine: [
       "Yep, you’re down for Friday at 10 a.m. Central.",
       "Anytime. Hope you get a minute to put your feet up today.",
@@ -33,9 +33,9 @@ export const channels = [
   },
   {
     id: "app",
-    title: "AI agent",
+    title: "Aven",
     subtitle: "Portal chat",
-    opening: "Hey Maya! It’s the CareBridge assistant. How’re you doing today?",
+    opening: "Hey Maya! It’s Aven. How’re you doing today?",
     routine: [
       "Sounds good. I’ve got you down for Friday at 10 a.m. Central.",
       "You got it, Maya. Take care.",
@@ -115,7 +115,7 @@ function sampleDialogue(channel: Channel, scenario: Scenario, reply: string): Di
   }
   return [
     ...opening,
-    assistant(`Glad it’s a little better. Let’s see what’s open. Could you do ${appointment.first} work?`),
+    assistant(`Glad it’s a little better. Let’s see what’s open. Could you do ${appointment.first}?`),
     patientReply("I can’t make that one. Is there anything Friday morning?"),
     assistant(`Yep, there’s a spot ${appointment.alternate}. Think you can get a ride for that one?`),
     patientReply("That works. I can get a ride that morning."),

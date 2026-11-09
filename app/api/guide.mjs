@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         model,
         messages: [{
           role: "system",
-          content: "You explain a fictional CareBridge software demo. Restate the provided fact in one short sentence. Give no medical guidance and invent no capabilities.",
+          content: "You explain a fictional AVENLYTH software demo. Restate the provided fact in one short sentence. Give no medical guidance and invent no capabilities.",
         }, { role: "user", content: topics[topic] }],
         max_tokens: 100,
       }),

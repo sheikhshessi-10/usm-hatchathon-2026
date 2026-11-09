@@ -8,7 +8,7 @@ export function companionReply(message: string): CompanionReply {
     return { text: "If someone is in immediate danger, contact local emergency services now. This demo chat cannot reach a care team or emergency services." };
   }
   if (/\b(symptoms?|medic\w*|dose|diagnos\w*|treatment|prescri\w*|pain|bleeding|fever|should i take)\b/.test(text)) {
-    return { text: "I can help you find your way around CareBridge. For personal health questions, contact your healthcare professional." };
+    return { text: "I can help you find your way around AVENLYTH. For personal health questions, contact your healthcare professional." };
   }
   if (/\b(privacy|data|stored|storage|private|who can see|real)\b/.test(text)) {
     return { text: "This chat runs in your browser. It stays open while you explore and clears on reload. Please use fictional information only." };
@@ -22,5 +22,5 @@ export function companionReply(message: string): CompanionReply {
   if (/\b(patient|visit|check.in|appointments?|start)\b/.test(text)) {
     return { text: "Start in the Patient portal. You can explore a fictional patient’s daily check-in and care plan.", link: { href: "#mom", label: "Open Patient portal" } };
   }
-  return { text: "I’m Pip, your demo guide. Ask me about getting started, the Patient portal, Care loops, Reports, or chat privacy." };
+  return { text: "I’m Aven, your demo guide. Ask me about getting started, the Patient portal, Care loops, Reports, or chat privacy." };
 }

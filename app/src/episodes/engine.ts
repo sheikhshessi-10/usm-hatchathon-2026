@@ -438,7 +438,7 @@ export function applyEvent(previous: State, event: Event): State {
           {
             who: "system",
             at: event.at,
-            text: `This is a scripted CareBridge demonstration. ${context ? `Previously reported: ${context} ` : ""}What follow-up support do you need today?`,
+            text: `Hey, it’s Aven from AVENLYTH. ${context ? `Previously reported: ${context} ` : ""}What follow-up support do you need today?`,
           },
         ],
       });
