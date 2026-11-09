@@ -48,15 +48,23 @@ export function LiveCall({ mom }: { mom: Mom }) {
   const [busy, setBusy] = useState(false);
   const timer = useRef<number>();
 
-  async function start() {
-    setErr(null); setSt(null); setBusy(true);
-    try {
-      const r = await fetch("/api/call", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ momName: mom.name, babyName: mom.baby.name, day: mom.dayToday }) });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.detail ? `${j.error} ${typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail)}` : j.error);
-      setCallId(j.id);
-    } catch (e) { setErr(String((e as Error).message ?? e)); setBusy(false); }
-  }
+  // Watch for the newest check-in call to the CareBridge line and follow it live.
+  useEffect(() => {
+    const since = Date.now() - 10 * 60 * 1000;
+    let stop = false; let t: number;
+    const look = async () => {
+      try {
+        const r = await fetch("/api/calls");
+        const j = await r.json();
+        const newest = (j.calls ?? []).find((c: { startedAt: string }) => new Date(c.startedAt).getTime() > since);
+        if (!stop && newest) { setCallId((cur) => cur === newest.id ? cur : newest.id); setBusy(true); }
+        if (!r.ok && !stop) setErr(j.error ?? "Live calling is not set up.");
+      } catch { /* try again */ }
+      if (!stop) t = window.setTimeout(look, 4000);
+    };
+    look();
+    return () => { stop = true; window.clearTimeout(t); };
+  }, []);
 
   useEffect(() => {
     if (!callId) return;
@@ -78,18 +86,19 @@ export function LiveCall({ mom }: { mom: Mom }) {
   const ended = st?.status === "ended";
   const data = ended ? (st?.data && (st.data.sys || st.data.symptoms?.length || st.data.reached !== undefined) ? st.data : parseTranscript(st!.messages.filter((m) => m.role === "mom").map((m) => m.text).join(" "))) : null;
   const result = data ? evaluate(toCheckIn(data, mom.dayToday)) : null;
-  const first = mom.name.split(" ")[0];
+  const first = "Keisha";
+  void mom;
 
   return (
     <Card className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="font-bold">Live AI check-in call</h3>
-          <p className="text-sm text-body">A real phone call to the demo phone. The AI asks the questions. Our fixed rules decide the result.</p>
+          <p className="text-sm text-body">Call the CareBridge line from any phone and play the mom. The AI asks the questions. Our fixed rules decide the result. The conversation shows up here live.</p>
         </div>
-        <button onClick={start} disabled={busy} className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy disabled:opacity-60">
-          <PhoneCall size={16} /> {busy ? "Call running..." : `Call ${first} now`}
-        </button>
+        <a href="tel:+16012305710" className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy">
+          <PhoneCall size={16} /> {busy ? "Call running..." : "Call (601) 230-5710"}
+        </a>
       </div>
 
       {err && <p className="mt-3 rounded-xl bg-red-soft px-4 py-3 text-sm text-red">{err}</p>}
