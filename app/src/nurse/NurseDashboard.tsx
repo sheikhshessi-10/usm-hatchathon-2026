@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { LiveCall } from "./LiveCall";
+import { CallKpis } from "./CallKpis";
 import {
   ArrowRight, Baby, CheckCircle2, ChevronRight, PhoneMissed, Search, Sparkles, X,
 } from "lucide-react";
@@ -85,6 +87,8 @@ export default function NurseDashboard() {
               </div>
             </div>
           </section>
+
+          <CallKpis />
 
           {/* Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
@@ -233,6 +237,8 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
               </div>
             </div>
           )}
+
+          <LiveCall mom={mom} />
 
           <PatientCheckIn mom={mom} />
 
