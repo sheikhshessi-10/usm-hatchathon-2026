@@ -71,12 +71,13 @@ export default function ProtocolsDashboard() {
             const task = result.episode.tasks[0];
             const accepted = task?.state === "accepted";
             const headingId = `protocol-${channel.id}`;
-            const messages = [
-              { ...result.interaction.messages[0], text: channel.opening },
-              ...result.interaction.messages.slice(1).map(message => urgent && message.who === "system"
-                ? { ...message, text: "Please get medical care immediately. Don’t wait for a reply here. The demo has logged an urgent review request. No help has been dispatched." }
-                : message),
-            ];
+            const systemLines = urgent
+              ? [channel.opening, "I’m glad you told me. Please get medical care immediately. Don’t wait for a reply here. This demo records an urgent review request. No help has been dispatched."]
+              : [channel.opening, ...channel.routine];
+            let systemLine = 0;
+            const messages = result.interaction.messages.map(message => message.who === "system"
+              ? { ...message, text: systemLines[systemLine++] ?? message.text }
+              : message);
             return (
               <section key={channel.id} className="protocol-channel" aria-labelledby={headingId}>
                 <header className="protocol-channel-header">
