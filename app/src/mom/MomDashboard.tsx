@@ -121,13 +121,7 @@ export default function MomDashboard() {
             <h1>Hi, {mom.name.split(" ")[0]}.</h1>
             <p>Your care plan and check-ins in one place.</p>
           </div>
-          <div className="patient-orbit" role="img" aria-label={`Day ${day} of your 10-day demo care plan`}>
-            <svg viewBox="0 0 128 128" aria-hidden="true">
-              <circle cx="64" cy="64" r="54" pathLength="100" className="patient-orbit-track" />
-              <circle cx="64" cy="64" r="54" pathLength="100" className="patient-orbit-fill" strokeDasharray={`${day * 10} 100`} />
-            </svg>
-            <div aria-hidden="true"><span>DAY</span><strong>{day}</strong><small>of 10</small></div>
-          </div>
+          <p className="patient-day"><span>POSTPARTUM</span><strong>Day {day}</strong><small>of 10 in this demo</small></p>
         </section>
 
         <nav ref={nav} className="patient-nav" aria-label="Patient portal">
@@ -149,7 +143,7 @@ export default function MomDashboard() {
           </aside>
         )}
 
-        <div className="patient-grid" hidden={page !== "Today"}>
+        <div className="patient-grid patient-today" hidden={page !== "Today"}>
             <DailyCheckIn key={checkInKey(mom)} mom={mom} />
             <section className="patient-card patient-next">
               <p className="patient-kicker"><CalendarDays size={15} aria-hidden="true" /> Care plan</p>
