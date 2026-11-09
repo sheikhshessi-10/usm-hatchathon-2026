@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import {
   ArrowRight, CalendarDays, Check, ChevronRight, CircleHelp, ClipboardList, CloudRain,
-  Heart, HeartPulse, History, House, Meh, Phone, Pill, Smile, Sparkles, TriangleAlert,
+  Heart, HeartPulse, History, House, Meh, Phone, Pill, Smile, TriangleAlert,
 } from "lucide-react";
 import { status, type Mom } from "../data/moms";
 import { useCare } from "../data/workflow";
@@ -54,11 +54,11 @@ function DailyCheckIn({ mom }: { mom: Mom }) {
 
   return (
     <section className="patient-card">
-      <p className="patient-kicker"><Sparkles size={15} /> Daily check-in</p>
-      <h2>{editing ? "How are you feeling today?" : "You made time for yourself."}</h2>
+      <p className="patient-kicker"><Heart size={15} aria-hidden="true" /> Daily check-in</p>
+      <h2>{editing ? "How are you feeling today?" : "Check-in saved"}</h2>
       {editing ? (
         <>
-          <p className="patient-muted">Take a moment for yourself. Whatever kind of day it is, it’s okay to say so.</p>
+          <p className="patient-muted">Choose the option that best describes your day.</p>
           <div className="patient-feelings" role="group" aria-label="How are you feeling today?">
             {FEELINGS.map(({ label, icon: Icon, color }) => (
               <button type="button" key={label} aria-pressed={choice === label} onClick={() => setChoice(label)}>
@@ -117,9 +117,9 @@ export default function MomDashboard() {
 
         <section className="patient-hero">
           <div className="patient-hero-copy">
-            <p className="patient-kicker"><Heart size={15} aria-hidden="true" /> Your postpartum journey</p>
+            <p className="patient-kicker"><Heart size={15} aria-hidden="true" /> Postpartum care</p>
             <h1>Hi, {mom.name.split(" ")[0]}.</h1>
-            <p>Little steps for your recovery. Let’s see what’s ahead today.</p>
+            <p>Your care plan and check-ins in one place.</p>
           </div>
           <div className="patient-orbit" role="img" aria-label={`Day ${day} of your 10-day demo care plan`}>
             <svg viewBox="0 0 128 128" aria-hidden="true">
@@ -127,7 +127,6 @@ export default function MomDashboard() {
               <circle cx="64" cy="64" r="54" pathLength="100" className="patient-orbit-fill" strokeDasharray={`${day * 10} 100`} />
             </svg>
             <div aria-hidden="true"><span>DAY</span><strong>{day}</strong><small>of 10</small></div>
-            <Sparkles className="patient-orbit-spark" size={22} aria-hidden="true" />
           </div>
         </section>
 
@@ -153,16 +152,16 @@ export default function MomDashboard() {
         <div className="patient-grid" hidden={page !== "Today"}>
             <DailyCheckIn key={checkInKey(mom)} mom={mom} />
             <section className="patient-card patient-next">
-              <p className="patient-kicker"><CalendarDays size={15} aria-hidden="true" /> Next in your plan</p>
-              <h2>One step at a time</h2>
+              <p className="patient-kicker"><CalendarDays size={15} aria-hidden="true" /> Care plan</p>
+              <h2>Your next action</h2>
               {next ? <div className="patient-next-action"><span className="patient-icon"><ClipboardList size={20} aria-hidden="true" /></span><div><strong>{next.title}</strong><p>Due on day {next.dueDay} after delivery</p></div></div> : <p className="patient-muted">Your sample care actions are up to date.</p>}
               <p className="patient-visit"><strong>Next visit</strong> {mom.visit}</p>
               <button type="button" className="patient-link" onClick={() => switchPage("My plan")}>See my care plan <ArrowRight size={16} aria-hidden="true" /></button>
             </section>
             <section className="patient-card patient-journey">
               <div>
-                <p className="patient-kicker"><HeartPulse size={15} aria-hidden="true" /> Check-in journey</p>
-                <h2>Small moments add up</h2>
+                <p className="patient-kicker"><HeartPulse size={15} aria-hidden="true" /> Phone check-ins</p>
+                <h2>Check-in history</h2>
                 <p className="patient-muted">{mom.calls.filter((call) => call.answered).length} recorded phone check-ins in this demo.</p>
               </div>
               <ol className="patient-days" aria-label="Ten-day phone check-in history">
@@ -196,7 +195,7 @@ export default function MomDashboard() {
             </section>
             <section className="patient-card">
               <p className="patient-kicker"><Heart size={15} aria-hidden="true" /> Reminders</p>
-              <h2>What to keep in mind</h2>
+              <h2>Visits and medicines</h2>
               <ul className="patient-list">
                 <li><span className="patient-icon"><CalendarDays size={19} aria-hidden="true" /></span><div><strong>Next visit</strong><p>{mom.visit}</p></div></li>
                 <li><span className="patient-icon"><Pill size={19} aria-hidden="true" /></span><div><strong>Medicines on your plan</strong><p>{mom.meds.join(", ") || "No medicines listed."}</p></div></li>
@@ -228,7 +227,7 @@ export default function MomDashboard() {
                 <div><dt>Feeds</dt><dd>{today.baby.feedsPerDay ?? "—"}</dd></div>
                 <div><dt>Wet diapers</dt><dd>{today.baby.wetDiapers ?? "—"}</dd></div>
                 <div><dt>Temperature</dt><dd>{today.baby.tempF != null ? `${today.baby.tempF}°F` : "—"}</dd></div>
-              </dl> : <p className="patient-muted">No baby check-in was recorded today.</p>}
+              </dl> : <p className="patient-muted">No baby check-in was recorded in the latest entry.</p>}
             </section>
           </div>
         )}
@@ -236,7 +235,7 @@ export default function MomDashboard() {
         {page === "Support" && (
           <div className="patient-grid">
             <section className="patient-card">
-              <p className="patient-kicker"><CircleHelp size={15} aria-hidden="true" /> You can ask for help</p>
+              <p className="patient-kicker"><CircleHelp size={15} aria-hidden="true" /> Support</p>
               <h2>Your care team</h2>
               <p className="patient-muted">The sample care team is Nurse Taylor at Forrest General. This demo can’t send them a message or place a call.</p>
             </section>

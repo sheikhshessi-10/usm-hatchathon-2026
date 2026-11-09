@@ -20,7 +20,7 @@ describe("cohort UI rendering", () => {
   it("makes every synthetic case selectable in the patient view", () => {
     const html = renderToStaticMarkup(<CareProvider><MomDashboard /></CareProvider>);
     for (const m of MOMS) expect(html).toContain(`value="${m.id}"`);
-    expect(html).toContain("Your postpartum journey");
+    expect(html).toContain("Postpartum care");
     expect(html).not.toContain("Your nurse has been told");
   });
 });
