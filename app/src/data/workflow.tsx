@@ -31,7 +31,7 @@ export function continuityMetrics(moms: Mom[], state: Workflow) {
   const urgent = moms.filter(m => status(m).level.startsWith("red"));
   // A review or escalation is an acknowledgement, not proof of treatment or recovery.
   const acknowledged = urgent.filter(m => state.reviews.some(r => r.patientId === m.id));
-  const missed = moms.filter(m => !status(m).today?.answered);
+  const missed = moms.filter(m => status(m).today?.answered === false);
   const recovered = missed.filter(m => state.reviews.filter(r => r.patientId === m.id && r.contactOutcome !== "not-recorded").slice(-1)[0]?.contactOutcome === "reached");
   return { enrolled: moms.length, urgent: urgent.length, acknowledged: acknowledged.length,
     pendingUrgent: urgent.length - acknowledged.length,
