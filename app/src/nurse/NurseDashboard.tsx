@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LiveCall } from "./LiveCall";
+import { fromMom } from "../data/callPatient";
 import { CallKpis } from "./CallKpis";
 import {
   ArrowRight, Baby, CheckCircle2, ChevronRight, PhoneMissed, Search, Sparkles, X,
@@ -242,7 +243,7 @@ function Drawer({ mom, onClose, onHandled }: { mom: Mom; onClose: () => void; on
             </div>
           )}
 
-          <LiveCall mom={mom} />
+          <LiveCall patient={fromMom(mom)} />
 
           <PatientCheckIn mom={mom} />
 

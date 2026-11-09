@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { PhoneCall, PhoneOff } from "lucide-react";
 import { evaluate, type CheckIn, type MomSymptom } from "../lib/rules";
-import type { Mom } from "../data/moms";
+import type { CallPatient } from "../data/callPatient";
 import { Card, Pill } from "../ui/parts";
 import { LEVEL_TEXT } from "../data/moms";
 import { PatientFile } from "./PatientFile";
@@ -10,6 +10,7 @@ type CallData = {
   reached?: boolean; emergency?: boolean; sys?: number; dia?: number; symptoms?: string[]; tookMeds?: boolean;
   babyFeeds?: number; babyWetDiapers?: number; babyTempF?: number; babyYellow?: "none" | "eyes" | "face" | "spreading";
   babyHardToWake?: boolean; babyCantWake?: boolean; babyFeedingPoorly?: boolean; questionsForNurse?: string;
+  checklist?: { id: string; asked?: boolean; status?: "ok" | "concern" | "unclear" | "not_asked"; answer?: string }[]; checkupComplete?: boolean;
 };
 type Status = { status: string; endedReason: string | null; messages: { role: "mom" | "ai"; text: string }[]; transcript: string; data: CallData | null; summary: string | null; recordingUrl: string | null };
 
@@ -56,7 +57,7 @@ export const NO_ANSWER = /no-answer|busy|voicemail|failed|did-not-answer/i;
 
 const STEP: Record<string, string> = { queued: "Dialing...", ringing: "Ringing...", "in-progress": "On the call now", forwarding: "Transferring", ended: "Call ended" };
 
-export function LiveCall({ mom }: { mom: Mom }) {
+export function LiveCall({ patient }: { patient: CallPatient }) {
   const [callId, setCallId] = useState<string | null>(null);
   const [st, setSt] = useState<Status | null>(null);
   const [feedWarning, setFeedWarning] = useState(false);
@@ -66,7 +67,7 @@ export function LiveCall({ mom }: { mom: Mom }) {
   async function startCall() {
     setDialing(true); setCallErr(null);
     try {
-      const r = await fetch("/api/call", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ momName: mom.name, babyName: mom.baby.name, day: mom.dayToday }) });
+      const r = await fetch("/api/call", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ momName: patient.name, babyName: patient.babyName, day: patient.day }) });
       const j = await r.json();
       if (!r.ok) throw new Error(typeof j.detail === "string" ? `${j.error} ${j.detail}` : j.error);
       setCallId(j.id);
@@ -128,7 +129,7 @@ export function LiveCall({ mom }: { mom: Mom }) {
   const unreached = ended && (st.data?.reached === false || NO_ANSWER.test(st.endedReason ?? ""));
   const spoken = ended ? st.messages.filter(message => message.role === "mom").map(message => message.text).join(" ").trim() : "";
   const data = ended && !unreached ? readCallAnswers(st.data, spoken) : null;
-  const result = data ? evaluate(toCheckIn(data, mom.dayToday)) : null;
+  const result = data ? evaluate(toCheckIn(data, patient.day)) : null;
   const waitingForAnswers = ended && !(st.data || st.summary || st.endedReason);
 
   return (
@@ -140,12 +141,12 @@ export function LiveCall({ mom }: { mom: Mom }) {
         </div>
 <div className="flex flex-wrap gap-2">
           <button type="button" onClick={startCall} disabled={dialing} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy disabled:opacity-60">
-            <PhoneCall size={16} aria-hidden="true" /> {dialing ? "Calling..." : `AI calls ${mom.name.split(" ")[0]} now`}
+            <PhoneCall size={16} aria-hidden="true" /> {dialing ? "Calling..." : `AI calls ${patient.name.split(" ")[0]} now`}
           </button>
           <a href="tel:+16012305710" className="inline-flex min-h-11 items-center rounded-full border border-line bg-white px-4 py-2.5 text-sm font-semibold text-navy">Or call in: (601) 230-5710</a>
         </div>
       </div>
-      <PatientFile mom={mom} />
+      <PatientFile patient={patient} />
 
       {callErr && <p role="alert" className="mt-3 rounded-xl bg-red-soft px-4 py-3 text-sm text-red">{callErr}</p>}
       {feedWarning && <p role="status" className="mt-3 text-sm text-body">The incoming call feed is temporarily unavailable. Checking again…</p>}
@@ -180,6 +181,7 @@ export function LiveCall({ mom }: { mom: Mom }) {
               <ul className="mt-2 list-disc pl-5 text-sm">
                 {result.findings.length ? result.findings.map((f, i) => <li key={i}>{f.who === "baby" ? "Baby: " : ""}{f.reason}</li>) : <li>No warning signs reported.</li>}
               </ul>
+              {patient.checks.length > 0 && <Checklist patient={patient} data={data} />}
               {data.questionsForNurse && <p className="mt-2 text-sm"><b>Question for nurse:</b> {data.questionsForNurse}</p>}
               {st?.summary && <p className="mt-2 text-sm text-body">{st.summary}</p>}
               {st?.recordingUrl && <audio className="mt-3 w-full" aria-label="Demo call recording" controls src={st.recordingUrl} />}
@@ -188,5 +190,38 @@ export function LiveCall({ mom }: { mom: Mom }) {
         </div>
       )}
     </Card>
+  );
+}
+
+const CHECK_STYLE: Record<string, string> = { ok: "bg-green-soft text-green", concern: "bg-red-soft text-red", unclear: "bg-amber-soft text-amber", not_asked: "bg-ground text-body" };
+const CHECK_TEXT: Record<string, string> = { ok: "OK", concern: "Concern", unclear: "Unclear", not_asked: "Not asked" };
+
+/** Each doctor's order, what she said, and whether it is a concern. */
+function Checklist({ patient, data }: { patient: CallPatient; data: CallData }) {
+  const got = new Map((data.checklist ?? []).map((c) => [c.id, c]));
+  const rows = patient.checks.map((c) => ({ c, r: got.get(c.id) }));
+  const asked = rows.filter(({ r }) => r && r.status && r.status !== "not_asked").length;
+  const concerns = rows.filter(({ r }) => r?.status === "concern").length;
+  const complete = data.checkupComplete ?? asked === rows.length;
+  return (
+    <div className="mt-3 rounded-xl border border-line">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2">
+        <span className="text-sm font-bold">Doctor's orders checked</span>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${complete ? "bg-green-soft text-green" : "bg-amber-soft text-amber"}`}>
+          {complete ? "Check-up complete" : "Check-up incomplete"} · {asked}/{rows.length} asked{concerns ? ` · ${concerns} concern${concerns > 1 ? "s" : ""}` : ""}
+        </span>
+      </div>
+      <ul className="divide-y divide-line text-sm">
+        {rows.map(({ c, r }) => {
+          const st = r?.status ?? "not_asked";
+          return (
+            <li key={c.id} className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
+              <div className="min-w-0 flex-1"><b>{c.label}</b>{r?.answer && <p className="text-body">{r.answer}</p>}</div>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${CHECK_STYLE[st]}`}>{CHECK_TEXT[st]}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

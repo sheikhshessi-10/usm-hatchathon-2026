@@ -1,14 +1,15 @@
 import { useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, BarChart3, HeartPulse, Lightbulb, PhoneCall, RotateCcw, Stethoscope, TriangleAlert, UserRound } from "lucide-react";
-import { MOMS, status, LEVEL_TEXT } from "../data/moms";
-import { BPChart, Card, Pill } from "../ui/parts";
+import { Card } from "../ui/parts";
+import { MAYA, MAYA_REPORTS } from "../data/maya";
+import { CheckupLog } from "../nurse/CheckupLog";
 import { LiveCall } from "../nurse/LiveCall";
 import { CallKpis } from "../nurse/CallKpis";
 import "./expo.css";
 
 // One patient, start to finish. The whole 2:45 pitch runs on this page, in script order.
-const keisha = MOMS.find((m) => m.id === "m1")!;
-const first = keisha.name.split(" ")[0];
+const maya = MAYA;
+const first = maya.name.split(" ")[0];
 
 const stages = [
   { label: "Problem", time: "0:00", title: "Who checks on her after she goes home?", icon: TriangleAlert },
@@ -48,7 +49,6 @@ export default function ExpoDashboard() {
   const heading = useRef<HTMLHeadingElement>(null);
   const stage = stages[step];
   const Icon = stage.icon;
-  const s = status(keisha);
   const last = stages.length - 1;
 
   function goTo(next: number) {
@@ -63,7 +63,7 @@ export default function ExpoDashboard() {
           <div>
             <p className="expo-kicker"><HeartPulse size={16} aria-hidden="true" /> AVENLYTH · Hatchathon Expo</p>
             <h1>What happens after discharge?</h1>
-            <p className="expo-intro">Follow {keisha.name} from discharge to a live AI check-in call to her care team.</p>
+            <p className="expo-intro">Follow {maya.name} from her health record, to a live AI check-in on her doctor's orders, to her care team.</p>
           </div>
           <span className="expo-badge">Fictional patient · Real AI phone call</span>
         </header>
@@ -80,7 +80,7 @@ export default function ExpoDashboard() {
           <header className="expo-stage-header">
             <span className="expo-stage-icon" data-urgent={step === 2 || step === 3}><Icon size={21} aria-hidden="true" /></span>
             <div>
-              <p className="expo-eyebrow">Step {step + 1} of {stages.length} · {stage.time} · {keisha.name}</p>
+              <p className="expo-eyebrow">Step {step + 1} of {stages.length} · {stage.time} · {maya.name}</p>
               <h2 ref={heading} tabIndex={-1} id="expo-stage">{stage.title}</h2>
             </div>
             <button type="button" className="expo-restart" onClick={() => goTo(0)}><RotateCcw size={16} aria-hidden="true" /> <span>Restart demo</span></button>
@@ -102,35 +102,42 @@ export default function ExpoDashboard() {
                   <p className="mt-3 text-sm text-body">No app, no portal login. Works on a flip phone. Aven uses her record to make every call personal.</p>
                 </Card>
                 <Card className="p-5">
-                  <div className="flex flex-wrap items-center gap-2"><h3 className="text-lg font-extrabold">{keisha.name}, {keisha.age}</h3><Pill level={s.level}>{LEVEL_TEXT[s.level]}</Pill></div>
-                  <p className="text-sm text-body">{keisha.diagnosis} · {keisha.delivery} · day {keisha.dayToday} at home · {keisha.county} County · {keisha.phoneType}</p>
-                  <BPChart calls={keisha.calls} height={180} />
+                  <h3 className="text-lg font-extrabold">{maya.name}, 29 · day {maya.day} after birth</h3>
+                  <p className="text-sm text-body">Gestational hypertension · vaginal birth Nov 3 · baby girl Ava · {MAYA_REPORTS.length} reports from pregnancy to discharge</p>
+                  <div className="mt-3 flex max-h-72 flex-col gap-2 overflow-y-auto">
+                    {MAYA_REPORTS.map((r) => (
+                      <details key={r.title} className="rounded-lg bg-ground px-3 py-2 text-sm">
+                        <summary className="cursor-pointer font-semibold">{r.date} · {r.title}</summary>
+                        <p className="mt-1 text-xs text-body">{r.author}</p>
+                        <ul className="mt-1 list-disc pl-5">{r.lines.map((l) => <li key={l}>{l}</li>)}</ul>
+                      </details>
+                    ))}
+                  </div>
                 </Card>
               </div>
             )}
 
             {step === 2 && (
               <>
-                <p className="text-sm text-body">Load {first}'s file, press the gold button, and the AI calls the demo phone. Answer as {first}: "166 over 112, and I have a bad headache." The conversation and the rules result appear here live.</p>
-                <LiveCall mom={keisha} />
+                <Card className="p-5">
+                  <h3 className="font-bold">Doctor's orders Aven will check ({maya.checks.length})</h3>
+                  <ol className="mt-2 grid list-decimal gap-x-6 gap-y-1 pl-5 text-sm sm:grid-cols-2">{maya.checks.map((c) => <li key={c.id}><b>{c.label}</b> <span className="text-body">· concern if {c.concernIf}</span></li>)}</ol>
+                </Card>
+                <p className="text-sm text-body">1. Press "Load into AI call" so Aven has Maya's full record and the doctor's orders. 2. Press the gold button: Aven calls the demo phone. 3. Answer as Maya. Try a concern: "my discharge smells kind of bad." The conversation, the checklist, and the rules result appear here live.</p>
+                <LiveCall patient={maya} />
               </>
             )}
 
             {step === 3 && (
               <div className="grid gap-4 lg:grid-cols-2">
+                <CheckupLog patient={maya} />
                 <Card className="p-5">
-                  <p className="expo-eyebrow">Nurse worklist</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2"><h3 className="text-lg font-extrabold">{keisha.name}</h3><Pill level={s.level}>{LEVEL_TEXT[s.level]}</Pill></div>
-                  <ul className="mt-2 list-disc pl-5 text-sm">{s.findings.map((f, i) => <li key={i}>{f.who === "baby" ? "Baby: " : ""}{f.reason}</li>)}</ul>
-                  <p className="mt-3 text-sm text-body">Aven stops the routine check-in and escalates to the nurse. Fixed medical rules (SMFM, Mississippi toolkit, POST-BIRTH, AAP) decide urgency, not the AI.</p>
-                  <a href="#nurse/m1" className="mt-3 inline-block text-sm font-bold text-navy underline">Open {first} in the nurse screen</a>
-                </Card>
-                <Card className="p-5">
-                  <p className="expo-eyebrow">Doctor</p>
-                  <h3 className="text-lg font-extrabold">One record for the whole team</h3>
-                  <p className="mt-2 text-sm text-body">The doctor sees her exact words, the trend, the reason for escalation, and what still needs human review.</p>
-                  <a href="#doctor/m1" className="mt-3 inline-block text-sm font-bold text-navy underline">Open {first} in the doctor screen</a>
-                  <a href="#mom" className="mt-2 block text-sm font-bold text-navy underline">See {first}'s own page</a>
+                  <p className="expo-eyebrow">Care team</p>
+                  <h3 className="text-lg font-extrabold">What she said, why it was flagged, and what needs review</h3>
+                  <p className="mt-2 text-sm text-body">Every call is logged against the doctor's orders. A concern on any order, or danger-range blood pressure by fixed medical rules, goes straight to the nurse. A missed order means the check-up is marked incomplete, not done.</p>
+                  <a href="#episodes" className="mt-3 inline-block text-sm font-bold text-navy underline">Open {first}'s care loop: handoff and doctor verification</a>
+                  <a href="#nurse" className="mt-2 block text-sm font-bold text-navy underline">Open the nurse worklist</a>
+                  <a href="#doctor" className="mt-2 block text-sm font-bold text-navy underline">Open the doctor screen</a>
                 </Card>
               </div>
             )}

@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const r = await fetch(`${VAPI}/assistant/${id}`, { headers: auth });
     const a = await r.json();
     if (!r.ok) return res.status(502).json({ error: "Vapi lookup failed" });
-    return res.status(200).json({ momName: a.metadata?.momName ?? null, loadedAt: a.metadata?.loadedAt ?? null, chars: a.metadata?.chars ?? 0 });
+    return res.status(200).json({ checks: a.metadata?.checks ?? "", momName: a.metadata?.momName ?? null, loadedAt: a.metadata?.loadedAt ?? null, chars: a.metadata?.chars ?? 0 });
   }
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -25,12 +25,16 @@ export default async function handler(req, res) {
   const babyName = !rawBaby || /^baby (boy|girl)/i.test(rawBaby) ? "your little one" : rawBaby;
   const day = Math.max(1, Math.min(10, Number(req.body?.day) || 5));
   const background = String(req.body?.document || "").slice(0, 12000);
+  // Doctor's orders to check on the call: up to 15 short items.
+  const checks = (Array.isArray(req.body?.checks) ? req.body.checks : []).slice(0, 15)
+    .map((c) => ({ id: String(c?.id || "").replace(/[^a-z0-9_]/gi, "").slice(0, 30), label: String(c?.label || "").slice(0, 60), question: String(c?.question || "").slice(0, 300), concernIf: String(c?.concernIf || "").slice(0, 200) }))
+    .filter((c) => c.id && c.question);
   if (!momName) return res.status(400).json({ error: "Patient name is required." });
 
   const first = momName.split(" ")[0];
-  const a = assistant({ momName, babyName, day, background });
+  const a = assistant({ momName, babyName, day, background, checks });
   a.firstMessage = `Hey ${first}! It's Aven, from your care team over at Forrest General. Thanks so much for calling in. How're you and ${babyName} doing today?`;
-  a.metadata = { momName, babyName, day, loadedAt: new Date().toISOString(), chars: background.length };
+  a.metadata = { momName, babyName, day, loadedAt: new Date().toISOString(), chars: background.length, checks: checks.map((c) => c.id).join(",").slice(0, 400) };
   try {
     let r = await fetch(`${VAPI}/assistant/${id}`, { method: "PATCH", headers: auth, body: JSON.stringify(a) });
     if (r.status === 400) {

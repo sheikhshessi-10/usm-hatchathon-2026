@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FileUp, Send } from "lucide-react";
 import { LABEL } from "../lib/rules";
 import type { Mom } from "../data/moms";
+import type { CallPatient } from "../data/callPatient";
 
 /** Turns the patient record into a plain-text file the AI reads before the call. */
 export function buildPatientFile(m: Mom): string {
@@ -22,8 +23,8 @@ export function buildPatientFile(m: Mom): string {
   return lines.join("\n");
 }
 
-export function PatientFile({ mom }: { mom: Mom }) {
-  const [doc, setDoc] = useState(() => buildPatientFile(mom));
+export function PatientFile({ patient }: { patient: CallPatient }) {
+  const [doc, setDoc] = useState(() => patient.file);
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [msg, setMsg] = useState("");
   const [loaded, setLoaded] = useState<string | null>(null);
@@ -40,11 +41,11 @@ export function PatientFile({ mom }: { mom: Mom }) {
   async function send() {
     setState("sending"); setMsg("");
     try {
-      const r = await fetch("/api/brief", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ momName: mom.name, babyName: mom.baby.name, day: mom.dayToday, document: doc }) });
+      const r = await fetch("/api/brief", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ momName: patient.name, babyName: patient.babyName, day: patient.day, document: doc, checks: patient.checks }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.detail ? `${j.error} ${j.detail}` : j.error);
-      setState("done"); setLoaded(mom.name);
-      setMsg(`Loaded. The next call to (601) 230-5710 will be about ${mom.name.split(" ")[0]} and use this file.`);
+      setState("done"); setLoaded(patient.name);
+      setMsg(`Loaded. The next call to (601) 230-5710 will be about ${patient.name.split(" ")[0]}, use this file, and check ${patient.checks.length} doctor's orders.`);
     } catch (e) { setState("error"); setMsg(String((e as Error).message ?? e)); }
   }
 
