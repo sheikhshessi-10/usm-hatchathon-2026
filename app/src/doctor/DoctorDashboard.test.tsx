@@ -17,7 +17,7 @@ const navigate = async (hash: string) => { await act(async()=>{location.hash=has
 beforeEach(async()=>{localStorage.clear();location.hash="#doctor";host=document.createElement("div");document.body.append(host);root=createRoot(host);await act(async()=>root.render(<App/>));});
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();});
 describe("doctor to care-team workflow",()=>{
-  it("records a review and a care action shared with nurse and mother views",async()=>{
+  it("records a review and a care action shared with nurse and patient views",async()=>{
     expect(host.textContent).toContain("Doctor portal");
     const note=host.querySelector("textarea")!;
     expect([...host.querySelectorAll("button")].find(b=>b.textContent==="Save doctor review")!.disabled).toBe(true);
@@ -41,7 +41,8 @@ describe("doctor to care-team workflow",()=>{
     await act(async()=>accept.click());
     expect(taskRow().textContent).toContain("Accepted by Nurse");
     await navigate("#mom");
-    expect(host.textContent).toContain("accepted by care team");
+    await click("My plan");
+    expect(host.textContent).toContain("Accepted by your care team");
     await navigate("#nurse");
     await act(async()=>[...host.querySelectorAll("button")].find(b=>b.textContent?.includes("Keisha Williams"))!.click());
     const complete = [...taskRow().querySelectorAll("button")].find(b=>b.textContent==="Record action completed")!;
@@ -52,6 +53,7 @@ describe("doctor to care-team workflow",()=>{
     expect(saved.acceptedAt).toBeTruthy();
     expect(saved.completedAt).toBeTruthy();
     await navigate("#mom");
+    await click("My plan");
     expect(host.textContent).toContain("Confirm transport for follow-up");
   });
   it("supports patient search and resets the assessment form when selection changes",async()=>{
