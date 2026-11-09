@@ -1,135 +1,254 @@
-import { useState } from "react";
-import { AlertTriangle, Baby, CalendarDays, Droplets, HeartPulse, LifeBuoy, PhoneCall, Siren, Thermometer, Utensils } from "lucide-react";
+import { useRef, useState } from "react";
+import {
+  ArrowRight, CalendarDays, Check, ChevronRight, CircleHelp, ClipboardList, CloudRain,
+  Heart, HeartPulse, History, House, Meh, Phone, Pill, Smile, Sparkles, TriangleAlert,
+} from "lucide-react";
 import { status, type Mom } from "../data/moms";
 import { useCare } from "../data/workflow";
-import type { Level } from "../lib/rules";
-import { BPChart, Card } from "../ui/parts";
+import { BPChart } from "../ui/parts";
+import "./patient.css";
 
-const MOM_TEXT: Record<Level, { title: string; body: string }> = {
-  red911: { title: "Urgent scenario concern", body: "This synthetic scenario requires an urgent human review pathway. No emergency response has been dispatched by this demo." },
-  red: { title: "Urgent clinician review needed", body: "A reported concern needs urgent clinical assessment. This demo does not notify a nurse or place a call." },
-  yellow: { title: "Your care plan needs review", body: "A reported concern or care gap needs review. In this demo, no nurse notification is sent." },
-  green: { title: "You're on track today", body: "No flagged concern is recorded in this demo today. Follow the individual care plan; this is not a medical clearance." },
-};
+const FEELINGS = [
+  { label: "Pretty good", icon: Smile, color: "peach" },
+  { label: "In between", icon: Meh, color: "lavender" },
+  { label: "A hard day", icon: CloudRain, color: "blue" },
+] as const;
+const PAGES = [
+  { label: "Today", icon: House },
+  { label: "My plan", icon: ClipboardList },
+  { label: "My history", icon: History },
+  { label: "Support", icon: CircleHelp },
+] as const;
 
-export default function MomDashboard() {
-  const { moms: MOMS, state } = useCare();
-  const [momId, setMomId] = useState("m1");
-  const mom = MOMS.find((m) => m.id === momId)!;
-  const s = status(mom);
-  const t = s.today;
-  const first = mom.name.split(" ")[0];
-  const tone =
-    s.level === "green" ? "bg-green-soft ring-green/25 text-green" : s.level === "yellow" ? "bg-amber-soft ring-amber/30 text-amber" : "bg-red text-white ring-red";
+type Feeling = (typeof FEELINGS)[number]["label"];
+type Page = (typeof PAGES)[number]["label"];
+
+function checkInKey(mom: Mom) {
+  return `carebridge-demo-feeling-v1:${mom.id}:${mom.history?.deliveryDate ?? "demo"}:${mom.dayToday}`;
+}
+
+function DailyCheckIn({ mom }: { mom: Mom }) {
+  const [saved, setSaved] = useState<Feeling | undefined>(() => {
+    try {
+      const value = localStorage.getItem(checkInKey(mom));
+      return FEELINGS.find(({ label }) => label === value)?.label;
+    } catch {
+      return undefined;
+    }
+  });
+  const [choice, setChoice] = useState(saved);
+  const [editing, setEditing] = useState(!saved);
+  const [sessionOnly, setSessionOnly] = useState(false);
+
+  function save() {
+    if (!choice) return;
+    try {
+      localStorage.setItem(checkInKey(mom), choice);
+      setSessionOnly(false);
+    } catch {
+      setSessionOnly(true);
+    }
+    setSaved(choice);
+    setEditing(false);
+  }
 
   return (
-    <main className="min-h-screen bg-ground text-ink">
-      <div className="mx-auto flex max-w-[440px] flex-col gap-4 px-4 pb-12 pt-16">
-        <label className="flex items-center justify-between gap-2 text-xs text-body">
-          <span>Demo: viewing as</span>
-          <select id="mom-pick" value={momId} onChange={(e) => setMomId(e.target.value)} className="rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-navy">
-            {MOMS.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-          </select>
-        </label>
-
-        {/* Hero */}
-        <section className="relative overflow-hidden rounded-[1.25rem] bg-gradient-to-br from-navy to-navy-900 p-6 text-white">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gold/10 blur-2xl" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/60">Day {mom.dayToday} of 10 at home</span>
-          <h1 className="mt-2 text-[28px] font-extrabold leading-tight tracking-tight">Hi {first}, here's how you and your baby are doing.</h1>
-          <div className="mt-5 flex gap-1.5" aria-label={`Day ${mom.dayToday} of 10`}>
-            {Array.from({ length: 10 }, (_, i) => (
-              <span key={i} className={`h-1.5 flex-1 rounded-full ${i < mom.dayToday ? "bg-gold" : "bg-white/15"}`} />
+    <section className="patient-card">
+      <p className="patient-kicker"><Sparkles size={15} /> Daily check-in</p>
+      <h2>{editing ? "How are you feeling today?" : "You made time for yourself."}</h2>
+      {editing ? (
+        <>
+          <p className="patient-muted">Take a moment for yourself. Whatever kind of day it is, it’s okay to say so.</p>
+          <div className="patient-feelings" role="group" aria-label="How are you feeling today?">
+            {FEELINGS.map(({ label, icon: Icon, color }) => (
+              <button type="button" key={label} aria-pressed={choice === label} onClick={() => setChoice(label)}>
+                <span className={`patient-face patient-face--${color}`}><Icon aria-hidden="true" size={25} strokeWidth={1.7} /></span>
+                {label}
+              </button>
             ))}
           </div>
+          <button type="button" className="patient-primary" disabled={!choice} onClick={save}>
+            Save my check-in <ArrowRight size={17} aria-hidden="true" />
+          </button>
+        </>
+      ) : (
+        <div className="patient-saved" role="status">
+          <span className="patient-icon patient-icon--mint"><Check size={20} aria-hidden="true" /></span>
+          <div><strong>{saved}</strong><p>{sessionOnly ? "Saved for this session." : "Saved on this device."}</p></div>
+          <button type="button" className="patient-link" onClick={() => setEditing(true)}>Edit</button>
+        </div>
+      )}
+      <p className="patient-fine">Demo check-ins stay in this browser and don’t reach a care team.</p>
+    </section>
+  );
+}
+
+export default function MomDashboard() {
+  const { moms, state } = useCare();
+  const [momId, setMomId] = useState(moms[0].id);
+  const [page, setPage] = useState<Page>("Today");
+  const nav = useRef<HTMLElement>(null);
+  const mom = moms.find((profile) => profile.id === momId) ?? moms[0];
+  const { level, today } = status(mom);
+  const tasks = state.tasks.filter((task) => task.patientId === mom.id);
+  const pending = tasks.filter((task) => !task.completed).sort((a, b) => a.dueDay - b.dueDay);
+  const next = pending[0];
+  const completed = tasks.length - pending.length;
+  const urgent = level.startsWith("red");
+  const day = Math.max(1, Math.min(mom.dayToday, 10));
+
+  function switchPage(destination: Page) {
+    setPage(destination);
+    nav.current?.querySelectorAll("button")[PAGES.findIndex(({ label }) => label === destination)]?.focus();
+  }
+
+  return (
+    <main className="patient-portal">
+      <div className="patient-shell">
+        <header className="patient-header">
+          <div className="patient-brand"><span><Heart size={19} aria-hidden="true" /></span> CareBridge <small>My care</small></div>
+          <label className="patient-profile">
+            <span>Demo profile</span>
+            <select value={mom.id} onChange={(event) => { setMomId(event.target.value); setPage("Today"); }}>
+              {moms.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}
+            </select>
+          </label>
+        </header>
+
+        <section className="patient-hero">
+          <div className="patient-hero-copy">
+            <p className="patient-kicker"><Heart size={15} aria-hidden="true" /> Your postpartum journey</p>
+            <h1>Hi, {mom.name.split(" ")[0]}.</h1>
+            <p>Little steps for your recovery. Let’s see what’s ahead today.</p>
+          </div>
+          <div className="patient-orbit" role="img" aria-label={`Day ${day} of your 10-day demo care plan`}>
+            <svg viewBox="0 0 128 128" aria-hidden="true">
+              <circle cx="64" cy="64" r="54" pathLength="100" className="patient-orbit-track" />
+              <circle cx="64" cy="64" r="54" pathLength="100" className="patient-orbit-fill" strokeDasharray={`${day * 10} 100`} />
+            </svg>
+            <div aria-hidden="true"><span>DAY</span><strong>{day}</strong><small>of 10</small></div>
+            <Sparkles className="patient-orbit-spark" size={22} aria-hidden="true" />
+          </div>
         </section>
 
-        {/* Today */}
-        <section className={`rounded-card p-5 ring-1 ${tone}`}>
-          <div className="flex items-start gap-3">
-            {s.level === "green" ? <HeartPulse className="mt-0.5 shrink-0" /> : <AlertTriangle className="mt-0.5 shrink-0" />}
-            <div className="flex flex-col gap-1">
-              <h2 className="text-lg font-extrabold leading-snug">{MOM_TEXT[s.level].title}</h2>
-              <p className={`text-[15px] ${s.level.startsWith("red") ? "text-white/90" : "text-ink"}`}>{MOM_TEXT[s.level].body}</p>
-            </div>
-          </div>
-          {s.level.startsWith("red") && (
-            <div className="mt-4 rounded-xl bg-white/15 px-4 py-3 text-sm">
-              <div className="font-bold">Demo care routing</div>
-              <div className="text-white/90">No real emergency routing or location service is connected.</div>
-            </div>
-          )}
-        </section>
+        <nav ref={nav} className="patient-nav" aria-label="Patient portal">
+          {PAGES.map(({ label, icon: Icon }) => (
+            <button type="button" key={label} aria-pressed={page === label} onClick={() => setPage(label)}>
+              <Icon size={20} aria-hidden="true" /> <span>{label}</span>
+            </button>
+          ))}
+        </nav>
 
-        <Card className="p-5"><h2 className="font-bold">Your care pathway: {mom.useCase}</h2>
-          <p className="mt-2 text-sm">{mom.diagnosis}</p>
-          <ul className="mt-2 list-disc pl-5 text-sm">{state.tasks.filter(t=>t.patientId===mom.id).map(t=><li key={t.id}>{t.title} · {t.completed ? "completed" : t.source === "doctor" && !t.acceptedAt ? `awaiting care-team acceptance · due day ${t.dueDay}` : t.acceptedAt ? `accepted by care team · due day ${t.dueDay}` : `due postpartum day ${t.dueDay}`}</li>)}</ul>
-        </Card>
-        {/* Reading */}
-        <Card className="p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-navy">Today's blood pressure</span>
-            <span className="text-xs text-body">{t?.answered ? `Call at ${t.time}` : "Missed call"}</span>
-          </div>
-          {t?.answered ? (
-            <>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-5xl font-extrabold tabular-nums tracking-tight">{t.sys}<span className="text-body">/</span>{t.dia}</span>
+        {level !== "green" && (
+          <aside className={`patient-notice ${urgent ? "patient-notice--urgent" : ""}`}>
+            <TriangleAlert size={21} aria-hidden="true" />
+            <div>
+              <h2>{urgent ? "This demo case needs urgent care-team review" : "Your demo care plan needs a review"}</h2>
+              <p>{urgent ? "This sample shows an urgent concern. The demo has no live emergency routing." : "A follow-up needs attention in this sample. The demo hasn’t contacted a nurse."}</p>
+            </div>
+            {page !== "Support" && <button type="button" className="patient-link" onClick={() => switchPage("Support")}>See support <ChevronRight size={15} aria-hidden="true" /></button>}
+          </aside>
+        )}
+
+        <div className="patient-grid" hidden={page !== "Today"}>
+            <DailyCheckIn key={checkInKey(mom)} mom={mom} />
+            <section className="patient-card patient-next">
+              <p className="patient-kicker"><CalendarDays size={15} aria-hidden="true" /> Next in your plan</p>
+              <h2>One step at a time</h2>
+              {next ? <div className="patient-next-action"><span className="patient-icon"><ClipboardList size={20} aria-hidden="true" /></span><div><strong>{next.title}</strong><p>Due on day {next.dueDay} after delivery</p></div></div> : <p className="patient-muted">Your sample care actions are up to date.</p>}
+              <p className="patient-visit"><strong>Next visit</strong> {mom.visit}</p>
+              <button type="button" className="patient-link" onClick={() => switchPage("My plan")}>See my care plan <ArrowRight size={16} aria-hidden="true" /></button>
+            </section>
+            <section className="patient-card patient-journey">
+              <div>
+                <p className="patient-kicker"><HeartPulse size={15} aria-hidden="true" /> Check-in journey</p>
+                <h2>Small moments add up</h2>
+                <p className="patient-muted">{mom.calls.filter((call) => call.answered).length} recorded phone check-ins in this demo.</p>
               </div>
-              <p className="mt-1 text-sm text-body">Synthetic reading for demonstration; individual targets require a clinician.</p>
-            </>
-          ) : (
-            <p className="mt-2 text-[15px]">We couldn't reach you today. Please check your blood pressure and call us back at <b>(601) 555-0100</b>.</p>
-          )}
-          <div className="mt-4 -mx-1"><BPChart calls={mom.calls} height={200} /></div>
-        </Card>
+              <ol className="patient-days" aria-label="Ten-day phone check-in history">
+                {Array.from({ length: 10 }, (_, index) => {
+                  const number = index + 1;
+                  const call = mom.calls.find(({ day }) => day === number);
+                  return <li key={number} data-recorded={call?.answered || undefined} aria-current={number === day ? "step" : undefined} aria-label={`Day ${number}: ${call?.answered ? "check-in recorded" : call ? "missed call" : "no call recorded"}`}>
+                    <span aria-hidden="true">{call?.answered ? <Check size={14} /> : number}</span>
+                    <small aria-hidden="true">{number}</small>
+                  </li>;
+                })}
+              </ol>
+            </section>
+        </div>
 
-        {/* Baby */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2 text-sm font-bold text-navy"><Baby size={16} /> {mom.baby.name}</div>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            <BabyStat icon={<Utensils size={16} />} label="Feeds today" value={t?.baby?.feedsPerDay ?? "–"} goal="Goal 8–12" />
-            <BabyStat icon={<Droplets size={16} />} label="Wet diapers" value={t?.baby?.wetDiapers ?? "–"} goal={mom.dayToday >= 5 ? "Goal 6+" : "Goal 3+"} />
-            <BabyStat icon={<Thermometer size={16} />} label="Temperature" value={t?.baby?.tempF ? `${t.baby.tempF}°` : "–"} goal="Fever 100.4°" />
+        {page === "My plan" && (
+          <div className="patient-grid">
+            <section className="patient-card">
+              <p className="patient-kicker"><ClipboardList size={15} aria-hidden="true" /> Care actions</p>
+              <h2>Your follow-up plan</h2>
+              {mom.useCase && <p className="patient-muted">{mom.useCase}</p>}
+              <p className="patient-muted">{completed} of {tasks.length} actions marked complete by the demo care team.</p>
+              <ul className="patient-list">
+                {[...pending, ...tasks.filter((task) => task.completed)].map((task) => (
+                  <li key={task.id}>
+                    <span className={`patient-icon${task.completed ? " patient-icon--mint" : ""}`}>{task.completed ? <Check size={18} aria-hidden="true" /> : <CalendarDays size={18} aria-hidden="true" />}</span>
+                    <div><strong>{task.title}</strong><p>{task.completed ? "Complete" : `Due on day ${task.dueDay} after delivery`}{!task.completed && task.source === "doctor" && (task.acceptedAt ? " · Accepted by your care team" : " · Waiting for the care team to accept")}</p></div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="patient-card">
+              <p className="patient-kicker"><Heart size={15} aria-hidden="true" /> Reminders</p>
+              <h2>What to keep in mind</h2>
+              <ul className="patient-list">
+                <li><span className="patient-icon"><CalendarDays size={19} aria-hidden="true" /></span><div><strong>Next visit</strong><p>{mom.visit}</p></div></li>
+                <li><span className="patient-icon"><Pill size={19} aria-hidden="true" /></span><div><strong>Medicines on your plan</strong><p>{mom.meds.join(", ") || "No medicines listed."}</p></div></li>
+                <li><span className="patient-icon"><Phone size={18} aria-hidden="true" /></span><div><strong>Demo phone check-in</strong><p>{day >= 10 ? "The ten-day demo plan has ended." : "Tomorrow at 9 AM in this sample plan."}</p></div></li>
+              </ul>
+            </section>
           </div>
-          <p className="mt-3 text-[13px] text-body">Always put your baby to sleep on their back, alone, in a crib or bassinet.</p>
-        </Card>
+        )}
 
-        {/* Warning signs */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2 text-sm font-bold text-red"><Siren size={16} /> Call 911 if you have</div>
-          <p className="mt-2 text-[15px]">Chest pain · trouble breathing · a seizure · thoughts of hurting yourself or your baby.</p>
-          <div className="mt-4 flex items-center gap-2 text-sm font-bold text-navy"><PhoneCall size={16} /> Call your doctor if you have</div>
-          <p className="mt-2 text-[15px]">A headache that won't go away · blurry vision · bleeding through 1 pad an hour · a red, swollen leg · fever 100.4°F or more.</p>
-          <p className="mt-3 text-xs text-body">From the POST-BIRTH warning signs.</p>
-        </Card>
-
-        {/* Care team */}
-        <Card className="p-5">
-          <div className="flex items-center gap-2 text-sm font-bold text-navy"><LifeBuoy size={16} /> Your care team</div>
-          <div className="mt-3 flex flex-col gap-3 text-[15px]">
-            <div className="flex items-center justify-between"><span>Nurse Taylor, Forrest General</span><span className="font-semibold tabular-nums">(601) 555-0100</span></div>
-            <div className="flex items-center justify-between"><span>Next call</span><span className="font-semibold">{mom.dayToday >= 10 ? "Ten-day demo plan ended" : "Demo cadence: next day, 9 AM"}</span></div>
-            <div className="flex items-center justify-between"><span className="flex items-center gap-1.5"><CalendarDays size={15} /> Next visit</span><span className="font-semibold text-right">{mom.visit}</span></div>
-            <div className="flex items-center justify-between"><span>Medicine</span><span className="font-semibold text-right">{mom.meds.join(", ") || "None"}</span></div>
+        {page === "My history" && (
+          <div className="patient-grid">
+            <section className="patient-card">
+              <p className="patient-kicker"><HeartPulse size={15} aria-hidden="true" /> Your readings</p>
+              <h2>Blood pressure</h2>
+              <p className="patient-muted">{today?.answered && today.sys !== undefined && today.dia !== undefined ? `Latest demo check-in: ${today.sys}/${today.dia} mmHg` : "No reading was recorded at the latest check-in."}</p>
+              <BPChart calls={mom.calls} height={195} />
+            </section>
+            <section className="patient-card">
+              <p className="patient-kicker"><History size={15} aria-hidden="true" /> Your activity</p>
+              <h2>Past phone check-ins</h2>
+              <ul className="patient-list">
+                {[...mom.calls].reverse().map((call) => <li key={call.day}><span className="patient-icon"><Phone size={17} aria-hidden="true" /></span><div><strong>Day {call.day}</strong><p>{call.answered ? `Check-in recorded at ${call.time}` : "Call missed"}</p></div></li>)}
+              </ul>
+            </section>
+            <section className="patient-card">
+              <p className="patient-kicker"><Heart size={15} aria-hidden="true" /> Baby’s check-in</p>
+              <h2>{mom.baby.name}’s latest log</h2>
+              {today?.baby ? <dl className="patient-baby">
+                <div><dt>Feeds</dt><dd>{today.baby.feedsPerDay ?? "—"}</dd></div>
+                <div><dt>Wet diapers</dt><dd>{today.baby.wetDiapers ?? "—"}</dd></div>
+                <div><dt>Temperature</dt><dd>{today.baby.tempF != null ? `${today.baby.tempF}°F` : "—"}</dd></div>
+              </dl> : <p className="patient-muted">No baby check-in was recorded today.</p>}
+            </section>
           </div>
-        </Card>
+        )}
+
+        {page === "Support" && (
+          <div className="patient-grid">
+            <section className="patient-card">
+              <p className="patient-kicker"><CircleHelp size={15} aria-hidden="true" /> You can ask for help</p>
+              <h2>Your care team</h2>
+              <p className="patient-muted">The sample care team is Nurse Taylor at Forrest General. This demo can’t send them a message or place a call.</p>
+            </section>
+            <section className="patient-card">
+              <p className="patient-kicker"><TriangleAlert size={15} aria-hidden="true" /> Postpartum warning signs</p>
+              <h2>Know when to get help</h2>
+              <p className="patient-muted">If you have an urgent warning sign during or after pregnancy, get medical care right away.</p>
+              <a className="patient-link" href="https://www.cdc.gov/hearher/maternal-warning-signs/index.html">See the CDC’s warning signs <ArrowRight size={16} aria-hidden="true" /></a>
+            </section>
+          </div>
+        )}
       </div>
-
     </main>
   );
 }
-
-function BabyStat({ icon, label, value, goal }: { icon: React.ReactNode; label: string; value: string | number; goal: string }) {
-  return (
-    <div className="rounded-xl bg-ground px-2 py-3">
-      <div className="flex justify-center text-navy/70">{icon}</div>
-      <div className="mt-1 text-2xl font-extrabold tabular-nums">{value}</div>
-      <div className="text-[11px] font-semibold text-ink">{label}</div>
-      <div className="text-[11px] text-body">{goal}</div>
-    </div>
-  );
-}
-
-export type { Mom };
-

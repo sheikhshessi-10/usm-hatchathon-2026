@@ -17,10 +17,10 @@ describe("cohort UI rendering", () => {
     expect(html).toContain("Mood screening");
     expect(html).not.toContain("NaN");
   });
-  it("makes every synthetic case selectable in the mother view", () => {
+  it("makes every synthetic case selectable in the patient view", () => {
     const html = renderToStaticMarkup(<CareProvider><MomDashboard /></CareProvider>);
     for (const m of MOMS) expect(html).toContain(`value="${m.id}"`);
-    expect(html).toContain("Your care pathway");
+    expect(html).toContain("Your postpartum journey");
     expect(html).not.toContain("Your nurse has been told");
   });
 });
