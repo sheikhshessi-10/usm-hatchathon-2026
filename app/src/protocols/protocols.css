@@ -103,3 +103,10 @@
 .protocol-escalation-details { margin-top: .55rem; font-size: .84rem; }
 .protocol-escalation-details summary { cursor: pointer; font-weight: 750; }
 .protocol-escalation-details p { max-width: 58rem; margin-top: .35rem; }
+
+.protocol-emergency-call { overflow: hidden; border: 1px solid #b54553; border-radius: .75rem; color: #66242e; background: #fff0f0; }
+.protocol-emergency-call summary { display: flex; align-items: center; gap: .55rem; min-height: 2.9rem; padding: .65rem .75rem; cursor: pointer; list-style: none; background: #8b2c38; color: #fff; font-weight: 800; }
+.protocol-emergency-call summary::-webkit-details-marker { display: none; }
+.protocol-emergency-call summary span { margin-left: auto; border: 1px solid #e4abb2; border-radius: .4rem; padding: .12rem .4rem; font-size: .7rem; }
+.protocol-emergency-call > div { padding: .7rem .75rem; font-size: .85rem; }
+.protocol-emergency-call p + p { margin-top: .35rem; }

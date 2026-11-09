@@ -18,7 +18,7 @@ describe.each(channels)("$title sample protocol", ({ id }) => {
     const queued = replayExample(id, "urgent");
     expect(queued.interaction.endpoint).toBe("urgent_escalation_initiated");
     expect(queued.interaction.messages).toHaveLength(3);
-    expect(queued.messages[queued.messages.length - 1]?.text).toContain("Please get medical care immediately");
+    expect(queued.messages[queued.messages.length - 1]?.text).toContain("Call 911 now");
     expect(queued.messages.some(message => message.text.includes("November 13"))).toBe(false);
     expect(queued.episode.scheduledAt).toBeUndefined();
     expect(queued.episode.tasks).toMatchObject([{ kind: "safety_review", state: "requested" }]);

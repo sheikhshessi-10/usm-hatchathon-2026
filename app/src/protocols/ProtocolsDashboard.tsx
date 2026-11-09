@@ -49,18 +49,18 @@ export default function ProtocolsDashboard() {
             {urgent ? <ShieldAlert size={23} aria-hidden="true" /> : <ClipboardList size={23} aria-hidden="true" />}
             <div>
               <h2 id="path-title">{urgent ? "Stop the routine check-in" : "Check in and find a time that works"}</h2>
-              <p>{urgent ? "In this sample, the patient reports chest pain and trouble breathing. The assistant interrupts the check-in and the demo queues an urgent staff review." : "Maya talks through her prescribed medicine, how her pain has changed, and when she can come in. The sample appointment is booked while follow-up stays open."}</p>
+              <p>{urgent ? "In this sample, the patient reports chest pain and trouble breathing. The assistant stops the check-in and tells Maya to call 911 right away. The demo queues staff review in parallel." : "Maya talks through her prescribed medicine, how her pain has changed, and when she can come in. The sample appointment is booked while follow-up stays open."}</p>
             </div>
           </div>
           <ol>
-            {(urgent ? ["Warning sign reported", "Routine questions stop", "Urgent review queued", "Staff acknowledges"] : ["Consent and identity", "Medication and pain check", "Agree on a time", "Attendance pending"]).map((label, index) =>
+            {(urgent ? ["Warning sign reported", "Tell patient to call 911", "Flag clinic in parallel", "Staff acknowledges"] : ["Consent and identity", "Medication and pain check", "Agree on a time", "Attendance pending"]).map((label, index) =>
               <li key={label}><span>{index + 1}</span>{label}</li>
             )}
           </ol>
-          {urgent && <p className="protocol-safety">Chest pain or trouble breathing after pregnancy calls for immediate medical care. This simulation does not send an alert or dispatch help. <a href="https://www.cdc.gov/hearher/maternal-warning-signs/">CDC warning signs</a></p>}
+          {urgent && <p className="protocol-safety">Demo only. The 911 preview shows what to say and places no call. The clinic alert is simulated. <a href="https://www.911.gov/calling-911/frequently-asked-questions/">911.gov guidance</a></p>}
           {urgent && <details className="protocol-escalation-details">
             <summary>What the receiving team needs</summary>
-            <p>The handoff should carry the patient’s exact words, the channel, the time, and the receiving role. If nobody acknowledges, the case stays open. A live clinic would need a defined on-call backup and acknowledgement deadline.</p>
+            <p>The clinic handoff should carry the patient’s exact words, the channel, the time, and the receiving role. If the patient can’t call and a staff member needs to reach dispatch, the staff workflow must confirm the patient’s current location and callback number and use the right dispatch center. The case stays open until the clinic documents what happened.</p>
           </details>}
         </section>
 
@@ -77,6 +77,15 @@ export default function ProtocolsDashboard() {
                   <span><Icon size={21} aria-hidden="true" /></span>
                   <div><h2 id={headingId}>{channel.title}</h2><p>{channel.subtitle}</p></div>
                 </header>
+                {urgent && channel.id === "app" && (
+                  <details className="protocol-emergency-call">
+                    <summary><Phone size={18} aria-hidden="true" /> Call 911 <span>Simulation</span></summary>
+                    <div>
+                      <p><strong>Demo preview. No call placed.</strong></p>
+                      <p>Tell the dispatcher where you are, the number they can call back, and what’s happening. If you can’t call, text 911 where it’s supported.</p>
+                    </div>
+                  </details>
+                )}
                 <div className={`protocol-conversation protocol-conversation--${channel.id}`}>
                   <div className="protocol-conversation-bar">
                     <Icon size={17} aria-hidden="true" />
@@ -102,6 +111,7 @@ export default function ProtocolsDashboard() {
                   </p>
                   {urgent && (
                     <>
+                      <p className="protocol-owner">Patient told to call 911. Clinic review runs in parallel.</p>
                       <p className="protocol-owner">Receiving role: Demo care coordinator</p>
                       <button disabled={accepted} onClick={() => setAcknowledged(current => current.includes(channel.id) ? current : [...current, channel.id])}>
                         {accepted ? "Acknowledgement recorded" : "Simulate staff acknowledgement"}
