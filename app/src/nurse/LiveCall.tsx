@@ -61,6 +61,18 @@ export function LiveCall({ mom }: { mom: Mom }) {
   const [st, setSt] = useState<Status | null>(null);
   const [feedWarning, setFeedWarning] = useState(false);
   const [pollWarning, setPollWarning] = useState(false);
+  const [dialing, setDialing] = useState(false);
+  const [callErr, setCallErr] = useState<string | null>(null);
+  async function startCall() {
+    setDialing(true); setCallErr(null);
+    try {
+      const r = await fetch("/api/call", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ momName: mom.name, babyName: mom.baby.name, day: mom.dayToday }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(typeof j.detail === "string" ? `${j.error} ${j.detail}` : j.error);
+      setCallId(j.id);
+    } catch (e) { setCallErr(String((e as Error).message ?? e)); }
+    setDialing(false);
+  }
 
   useEffect(() => {
     let stop = false;
@@ -71,7 +83,7 @@ export function LiveCall({ mom }: { mom: Mom }) {
         if (!response.ok) throw new Error("Call feed unavailable");
         const { calls } = await response.json() as { calls: { id: string; direction: string; startedAt: string }[] };
         const cutoff = Date.now() - 10 * 60 * 1000;
-        const newest = calls.find(call => call.direction === "inboundPhoneCall" && Date.parse(call.startedAt) > cutoff);
+        const newest = calls.find(call => Date.parse(call.startedAt) > cutoff);
         if (!stop) {
           setFeedWarning(false);
           if (newest) setCallId(newest.id);
@@ -124,14 +136,18 @@ export function LiveCall({ mom }: { mom: Mom }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="font-bold">Live demo phone line</h3>
-          <p className="mt-1 text-sm text-body">Load the patient file, then call in and play the patient. The conversation shows up here live.</p>
+          <p className="mt-1 text-sm text-body">Load the patient file, then press the button. The AI calls the demo phone; answer as the patient. The conversation shows up here live.</p>
         </div>
-        <a href="tel:+16012305710" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy">
-          <PhoneCall size={16} aria-hidden="true" /> Call (601) 230-5710
-        </a>
+<div className="flex flex-wrap gap-2">
+          <button type="button" onClick={startCall} disabled={dialing} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy disabled:opacity-60">
+            <PhoneCall size={16} aria-hidden="true" /> {dialing ? "Calling..." : `AI calls ${mom.name.split(" ")[0]} now`}
+          </button>
+          <a href="tel:+16012305710" className="inline-flex min-h-11 items-center rounded-full border border-line bg-white px-4 py-2.5 text-sm font-semibold text-navy">Or call in: (601) 230-5710</a>
+        </div>
       </div>
       <PatientFile mom={mom} />
 
+      {callErr && <p role="alert" className="mt-3 rounded-xl bg-red-soft px-4 py-3 text-sm text-red">{callErr}</p>}
       {feedWarning && <p role="status" className="mt-3 text-sm text-body">The incoming call feed is temporarily unavailable. Checking again…</p>}
       {!callId && !feedWarning && <p role="status" className="mt-3 text-sm text-body">Waiting for an incoming demo call.</p>}
 
