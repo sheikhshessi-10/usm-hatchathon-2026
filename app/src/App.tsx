@@ -59,19 +59,23 @@ export default function App() {
             Skip to workspace
           </a>
           <header className="border-b border-line bg-white print:hidden">
-            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-2 sm:px-8">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2 sm:gap-x-6 sm:px-8">
               <a href="#mom" className="inline-flex items-center gap-2 font-extrabold text-navy">
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-navy text-white"><Activity size={19} aria-hidden="true" /></span>
                 AVENLYTH
               </a>
-              <nav aria-label="AVENLYTH navigation" className="order-last grid w-full grid-cols-4 gap-1 sm:grid-cols-7 lg:order-none lg:flex lg:w-auto">
-                {views.map(([id, label]) => (
-                  <a key={id} href={`#${id}`} aria-current={view === id ? "page" : undefined} className={`grid min-h-11 place-items-center rounded-lg px-1 text-center text-xs font-bold sm:px-3 sm:text-sm ${view === id ? "bg-navy text-white" : "text-navy hover:bg-hover"}`}>
-                    {label}
-                  </a>
-                ))}
-              </nav>
-              <Companion />
+              {view === "expo" ? (
+                <a href="#mom" className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-bold text-navy hover:bg-hover">Full demo</a>
+              ) : (
+                <nav aria-label="AVENLYTH navigation" className="order-last grid w-full grid-cols-4 gap-1 sm:grid-cols-7 lg:order-none lg:flex lg:w-auto">
+                  {views.map(([id, label]) => (
+                    <a key={id} href={`#${id}`} aria-current={view === id ? "page" : undefined} className={`grid min-h-11 place-items-center rounded-lg px-1 text-center text-xs font-bold sm:px-3 sm:text-sm ${view === id ? "bg-navy text-white" : "text-navy hover:bg-hover"}`}>
+                      {label}
+                    </a>
+                  ))}
+                </nav>
+              )}
+              <div hidden={view === "expo"}><Companion /></div>
             </div>
           </header>
           <StorageNotice />
