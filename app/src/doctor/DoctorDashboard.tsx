@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Activity, ArrowUpRight, CheckCircle2, ClipboardList, Search, Stethoscope } from "lucide-react";
 import { DEMO_AS_OF, LEVEL_TEXT, status, type Mom } from "../data/moms";
 import { continuityMetrics, useCare, type Review } from "../data/workflow";
@@ -10,6 +10,7 @@ import { BPChart, Card, Pill } from "../ui/parts";
 type Filter = "all" | "urgent" | "unreviewed" | "overdue";
 export default function DoctorDashboard() {
   const { moms, state, reset } = useCare();
+  const workspace = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const requested = typeof location !== "undefined" ? location.hash.split("/")[1] : undefined;
@@ -24,7 +25,7 @@ export default function DoctorDashboard() {
     return true;
   }).sort((a,b) => RANK[status(b).level] - RANK[status(a).level]);
   const mom = moms.find(m => m.id === selected)!;
-  return <main className="min-h-screen bg-ground px-4 pb-12 pt-20 text-ink sm:px-8">
+  return <main className="min-h-screen bg-ground px-4 pb-12 pt-6 text-ink sm:px-8">
     <div className="mx-auto max-w-7xl space-y-6">
       <header className="rounded-card bg-navy p-6 text-white sm:p-8">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gold"><Stethoscope size={16}/> CareBridge · Clinical workspace</div>
@@ -47,9 +48,9 @@ export default function DoctorDashboard() {
             <label className="flex items-center gap-2 rounded-lg border border-line px-3"><Search size={16}/><input aria-label="Search doctor patients" className="min-w-0 w-full bg-transparent py-2 text-sm outline-none" placeholder="Patient, pathway, county" value={query} onChange={e=>setQuery(e.target.value)}/></label>
             <label className="block text-xs font-semibold">Review queue<select value={filter} onChange={e=>setFilter(e.target.value as Filter)} className="mt-1 w-full rounded-lg border border-line bg-white p-2 text-sm"><option value="all">All 15 patients</option><option value="urgent">Urgent clinical findings</option><option value="unreviewed">Awaiting doctor review</option><option value="overdue">Overdue care actions</option></select></label>
           </div>
-          <div className="max-h-[640px] overflow-y-auto">{shown.map(m=><button key={m.id} aria-pressed={m.id===selected} onClick={()=>{setSelected(m.id);location.hash=`#doctor/${m.id}`;}} className={`block w-full border-b border-line p-4 text-left hover:bg-hover ${m.id===selected?"bg-hover ring-inset ring-2 ring-navy/20":""}`}><div className="flex items-center justify-between gap-2"><span className="font-bold">{m.name}</span>{state.reviews.some(r=>r.patientId===m.id)&&<CheckCircle2 size={15} className="text-green"/>}</div><p className="mt-1 text-xs text-body">{m.useCase} · day {m.dayToday}</p><div className="mt-2"><Pill level={status(m).level}>{LEVEL_TEXT[status(m).level]}</Pill></div></button>)}{!shown.length&&<p className="p-6 text-sm text-body">No patients match this queue.</p>}</div>
+          <div className="max-h-64 overflow-y-auto lg:max-h-[640px]">{shown.map(m=><button key={m.id} aria-pressed={m.id===selected} onClick={()=>{setSelected(m.id);location.hash=`#doctor/${m.id}`;if(window.matchMedia?.("(max-width: 1023px)").matches) workspace.current?.focus();}} className={`block w-full border-b border-line p-4 text-left hover:bg-hover ${m.id===selected?"bg-hover ring-inset ring-2 ring-navy/20":""}`}><div className="flex items-center justify-between gap-2"><span className="font-bold">{m.name}</span>{state.reviews.some(r=>r.patientId===m.id)&&<CheckCircle2 size={15} className="text-green"/>}</div><p className="mt-1 text-xs text-body">{m.useCase} · day {m.dayToday}</p><div className="mt-2"><Pill level={status(m).level}>{LEVEL_TEXT[status(m).level]}</Pill></div></button>)}{!shown.length&&<p className="p-6 text-sm text-body">No patients match this queue.</p>}</div>
         </Card>
-        <PatientWorkspace key={mom.id} mom={mom}/>
+        <div ref={workspace} tabIndex={-1} aria-label="Selected patient workspace" className="min-w-0"><PatientWorkspace key={mom.id} mom={mom}/></div>
       </div>
       <button className="text-xs font-semibold text-body underline" onClick={()=>{if(window.confirm("Reset all demo reviews, task completions, and nurse notes?"))reset();}}>Reset demo workflow</button>
     </div>

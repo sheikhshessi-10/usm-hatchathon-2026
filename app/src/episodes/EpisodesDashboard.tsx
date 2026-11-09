@@ -58,6 +58,7 @@ export default function EpisodesDashboard() {
   const money = (n: number | null) => (n === null ? "N/A" : `$${n.toFixed(2)}`);
   useEffect(() => {
     setText("");
+    setSchedule("");
     setTitle("");
     setCorrection("");
     setSpeechStatus("");
@@ -94,7 +95,7 @@ export default function EpisodesDashboard() {
     );
   };
   return (
-    <main className="min-h-screen bg-ground px-4 pb-12 pt-24 text-ink sm:px-8">
+    <main className="min-h-screen bg-ground px-4 pb-12 pt-6 text-ink sm:px-8">
       <div className="mx-auto max-w-7xl space-y-5">
         <header className="rounded-card bg-navy p-6 text-white sm:p-8">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gold">
@@ -662,7 +663,7 @@ export default function EpisodesDashboard() {
               local demo log is not an immutable production audit system.
             </p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable episode audit table">
             <table className="min-w-[760px] w-full text-left text-xs">
               <thead className="bg-hover">
                 <tr>
