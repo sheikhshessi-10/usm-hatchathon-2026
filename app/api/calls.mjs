@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       .map((c) => ({
         id: c.id,
         direction: c.type ?? null,
-        momName: c.customer?.name ?? (c.type === "inboundPhoneCall" ? "Keisha Williams (demo call)" : "Unknown"),
+        momName: c.customer?.name ?? c.assistantOverrides?.metadata?.momName ?? (c.type === "inboundPhoneCall" ? "Keisha Williams (demo call)" : "Unknown"),
         status: c.status,
         endedReason: c.endedReason ?? null,
         startedAt: c.startedAt ?? c.createdAt,

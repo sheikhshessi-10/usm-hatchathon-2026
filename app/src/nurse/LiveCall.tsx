@@ -5,6 +5,7 @@ import { DOCTOR_REVIEW, type CallPatient } from "../data/callPatient";
 import { Card, Pill } from "../ui/parts";
 import { LEVEL_TEXT } from "../data/moms";
 import { PatientFile } from "./PatientFile";
+import { startWebCall, stopWebCall } from "./WebCall";
 
 type CallData = {
   reached?: boolean; emergency?: boolean; sys?: number; dia?: number; symptoms?: string[]; tookMeds?: boolean;
@@ -64,6 +65,17 @@ export function LiveCall({ patient }: { patient: CallPatient }) {
   const [pollWarning, setPollWarning] = useState(false);
   const [dialing, setDialing] = useState(false);
   const [callErr, setCallErr] = useState<string | null>(null);
+  const [onLaptop, setOnLaptop] = useState(false);
+  async function startLaptop() {
+    setCallErr(null); setDialing(true);
+    try {
+      const id = await startWebCall(patient.name, patient.babyName);
+      setOnLaptop(true);
+      if (id) setCallId(id);
+    } catch (e) { setCallErr(`Could not start the laptop call: ${String((e as Error).message ?? e)}`); }
+    setDialing(false);
+  }
+  function endLaptop() { stopWebCall(); setOnLaptop(false); }
   async function startCall() {
     setDialing(true); setCallErr(null);
     try {
@@ -140,6 +152,9 @@ export function LiveCall({ patient }: { patient: CallPatient }) {
           <p className="mt-1 text-sm text-body">Load the patient file, then press the button. The AI calls the demo phone; answer as the patient. The conversation shows up here live.</p>
         </div>
 <div className="flex flex-wrap gap-2">
+          {onLaptop
+            ? <button type="button" onClick={endLaptop} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-red px-4 py-2.5 text-sm font-bold text-white"><PhoneOff size={16} aria-hidden="true" /> End laptop call</button>
+            : <button type="button" onClick={startLaptop} disabled={dialing} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-navy px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"><PhoneCall size={16} aria-hidden="true" /> Talk on this laptop</button>}
           <button type="button" onClick={startCall} disabled={dialing} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-bold text-navy disabled:opacity-60">
             <PhoneCall size={16} aria-hidden="true" /> {dialing ? "Calling..." : `AI calls ${patient.name.split(" ")[0]} now`}
           </button>
